@@ -34,37 +34,45 @@ Live-Adresse:
         └── services.js
 ```
 
-## Dot Voting später aktivieren
+## Aktuelle Services
 
-In `assets/js/services.js` ändern:
+### Dot Voting
 
-```js
-status: "planned",
-url: null,
-source: null
-```
+Live:
 
-zu:
+`https://thomasasen.github.io/dot-voting-calculator/`
 
-```js
-status: "live",
-url: "/dot-voting/",
-source: "https://github.com/thomasasen/dot-voting"
-```
+Repository:
+
+`https://github.com/thomasasen/dot-voting-calculator`
+
+Der Rechner unterstützt K-Approval-basierte Punktzahl-Empfehlungen, Strukturprüfung, individuelle Ballot-Erfassung, Ranking, Tie-Erkennung an der Top-W-Grenze sowie eine Single-Ballot-/Leave-one-out-Stabilitätsprüfung.
 
 ## Neue Services ergänzen
 
-Einfach einen weiteren Eintrag in `window.SERVICES` ergänzen.
+Neue Tools werden in `assets/js/services.js` als weitere Einträge in `window.SERVICES` ergänzt.
+
+Beispiel:
+
+```js
+{
+  title: "Neues Tool",
+  category: "Utility",
+  description: "Kurze Beschreibung des Nutzens.",
+  status: "live",
+  url: "/repository-name/",
+  source: "https://github.com/thomasasen/repository-name"
+}
+```
 
 ## Cache
 
 `index.html` lädt CSS und JavaScript mit einer Versionsnummer:
 
 ```html
-styles.css?v=3.0.0
-services.js?v=3.0.0
-app.js?v=3.0.0
+styles.css?v=3.0.1
+services.js?v=3.0.1
+app.js?v=3.0.1
 ```
 
-Bei größeren Design-Änderungen die Versionsnummer erhöhen.
-Das verhindert, dass Browser oder CDN eine alte Asset-Version anzeigen.
+Bei Änderungen an ausgelieferten Assets die Versionsnummer erhöhen. Das reduziert Probleme durch ältere Browser- oder CDN-Caches.
