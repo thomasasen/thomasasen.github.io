@@ -1,16 +1,3 @@
-/*
- * Zentrale Service-Liste.
- *
- * Einen neuen Service hinzufügen:
- * 1. Diesen Block kopieren.
- * 2. Titel, Beschreibung, Status und Links anpassen.
- *
- * Dot Voting später freischalten:
- * - status: "planned"  -> status: "live"
- * - url: null          -> url: "/dot-voting/"
- * - source: null       -> source: "https://github.com/thomasasen/dot-voting"
- */
-
 window.SERVICES = [
   {
     title: "Dot Voting",
@@ -24,17 +11,17 @@ window.SERVICES = [
   }
 
   /*
-  Beispiel für einen späteren zweiten Service:
+  Später aktivieren:
 
-  ,{
-    title: "PDF → EPUB",
-    category: "Utility",
+  {
+    title: "Dot Voting",
+    category: "Decision Tool",
     description:
-      "PDF-Dokumente für E-Reader aufbereiten und als EPUB ausgeben.",
-    status: "beta",
-    url: "/pdf2epub/",
-    source: "https://github.com/thomasasen/pdf2epub",
-    tags: ["Documents", "EPUB"]
+      "Voting-Budgets berechnen, Priorisierungen strukturieren und Ergebnisse auf Stabilität prüfen.",
+    status: "live",
+    url: "/dot-voting/",
+    source: "https://github.com/thomasasen/dot-voting",
+    tags: ["Voting", "Priorisierung", "Analyse"]
   }
   */
 ];

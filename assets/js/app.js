@@ -6,7 +6,7 @@
   };
 
   const services = Array.isArray(window.SERVICES) ? window.SERVICES : [];
-  const container = document.getElementById("services");
+  const container = document.getElementById("service-list");
   const count = document.getElementById("service-count");
   const year = document.getElementById("year");
 
@@ -16,12 +16,9 @@
 
   if (count) {
     const liveCount = services.filter(service => service.status === "live").length;
-    const total = services.length;
-
     count.textContent =
-      total === 1
-        ? `01 Service · ${String(liveCount).padStart(2, "0")} verfügbar`
-        : `${String(total).padStart(2, "0")} Services · ${String(liveCount).padStart(2, "0")} verfügbar`;
+      `${String(services.length).padStart(2, "0")} ${services.length === 1 ? "Service" : "Services"} · ` +
+      `${String(liveCount).padStart(2, "0")} verfügbar`;
   }
 
   if (!container) return;
@@ -29,31 +26,24 @@
   container.innerHTML = services.map((service, index) => {
     const number = String(index + 1).padStart(2, "0");
     const status = statusLabels[service.status] || service.status;
+
     const tags = Array.isArray(service.tags) && service.tags.length
-      ? `
-        <div class="service-tags" aria-label="Schlagwörter">
+      ? `<div class="service-tags">
           ${service.tags.map(tag => `<span class="service-tag">${escapeHtml(tag)}</span>`).join("")}
-        </div>`
+         </div>`
       : "";
 
-    const primaryAction = service.url
-      ? `<a class="action-link" href="${escapeAttribute(service.url)}">Tool öffnen</a>`
-      : `<span class="action-disabled">Demnächst verfügbar</span>`;
-
-    const sourceAction = service.source
-      ? `<a class="action-link action-source"
-            href="${escapeAttribute(service.source)}"
-            target="_blank"
-            rel="noreferrer">Source</a>`
-      : "";
+    const action = service.url
+      ? `<a class="action-link" href="${escapeAttribute(service.url)}">Öffnen</a>`
+      : `<span class="disabled-link">Demnächst</span>`;
 
     return `
-      <article class="service-row ${service.url ? "is-live" : ""}">
-        <div class="service-number">${number}</div>
+      <article class="service ${service.url ? "is-live" : ""}">
+        <div class="service-index">${number}</div>
 
-        <div class="service-main">
-          <div class="service-meta">
-            <span class="service-category">${escapeHtml(service.category)}</span>
+        <div class="service-content">
+          <div class="service-topline">
+            <span class="service-type">${escapeHtml(service.category)}</span>
             <span class="status status-${escapeAttribute(service.status)}">${escapeHtml(status)}</span>
           </div>
 
@@ -62,9 +52,8 @@
           ${tags}
         </div>
 
-        <div class="service-actions">
-          ${primaryAction}
-          ${sourceAction}
+        <div class="service-action">
+          ${action}
         </div>
       </article>`;
   }).join("");

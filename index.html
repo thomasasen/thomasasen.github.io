@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Thomas Asen — Tools & Services</title>
-  <meta name="description" content="Praktische Webanwendungen, Utilities und Open-Source-Projekte von Thomas Asen.">
-  <meta name="theme-color" content="#f4f2ed">
+  <title>Thomas Asen · Tools & Services</title>
+  <meta name="description" content="Webanwendungen, Utilities und Open-Source-Projekte von Thomas Asen.">
+  <meta name="theme-color" content="#f7f7f5">
 
-  <meta property="og:title" content="Thomas Asen — Tools & Services">
-  <meta property="og:description" content="Praktische Webanwendungen, Utilities und Open-Source-Projekte.">
+  <meta property="og:title" content="Thomas Asen · Tools & Services">
+  <meta property="og:description" content="Webanwendungen, Utilities und Open-Source-Projekte.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://thomasasen.github.io/">
 
@@ -19,82 +19,77 @@
 </head>
 
 <body>
-  <div class="site-shell">
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Startseite">
-        <span class="brand-mark" aria-hidden="true">TA</span>
-        <span class="brand-name">Thomas Asen</span>
+  <div class="site">
+    <header class="header">
+      <a class="identity" href="/" aria-label="Startseite">
+        <span class="identity-mark" aria-hidden="true">TA</span>
+        <span>Thomas Asen</span>
       </a>
 
-      <a class="header-link"
-         href="https://github.com/thomasasen"
-         target="_blank"
-         rel="noreferrer">
-        GitHub <span aria-hidden="true">↗</span>
-      </a>
+      <nav class="nav" aria-label="Hauptnavigation">
+        <a href="#services">Services</a>
+        <a href="https://github.com/thomasasen" target="_blank" rel="noreferrer">
+          GitHub <span aria-hidden="true">↗</span>
+        </a>
+      </nav>
     </header>
 
     <main>
-      <section class="hero" aria-labelledby="page-title">
-        <p class="eyebrow">TOOLS &amp; SERVICES</p>
-
-        <div class="hero-grid">
-          <h1 id="page-title">Werkzeuge für konkrete Aufgaben.</h1>
-          <p class="hero-copy">
-            Kleine Webanwendungen, Utilities und Open-Source-Projekte.
-            Schlank gebaut, direkt nutzbar und ohne unnötigen Ballast.
-          </p>
-        </div>
+      <section class="intro">
+        <p class="kicker">Tools &amp; Services</p>
+        <h1>Praktische Tools.<br>Direkt nutzbar.</h1>
+        <p class="intro-copy">
+          Kleine Webanwendungen und Utilities für konkrete Aufgaben.
+          Ohne Login, ohne unnötige Komplexität.
+        </p>
       </section>
 
-      <section class="services-section" aria-labelledby="services-title">
-        <div class="section-head">
-          <h2 id="services-title">Services</h2>
+      <section id="services" class="services" aria-labelledby="services-heading">
+        <div class="section-title">
+          <div>
+            <p class="section-kicker">Übersicht</p>
+            <h2 id="services-heading">Services</h2>
+          </div>
           <p id="service-count" class="service-count" aria-live="polite"></p>
         </div>
 
-        <div id="services" class="service-list">
+        <div id="service-list" class="service-list">
           <noscript>
-            <article class="service-row">
-              <div class="service-number">01</div>
-              <div class="service-main">
-                <div class="service-meta">
-                  <span class="service-category">Decision Tool</span>
+            <article class="service">
+              <div class="service-index">01</div>
+
+              <div class="service-content">
+                <div class="service-topline">
+                  <span class="service-type">Decision Tool</span>
                   <span class="status status-planned">In Vorbereitung</span>
                 </div>
+
                 <h3>Dot Voting</h3>
                 <p>
                   Voting-Budgets berechnen, Priorisierungen strukturieren
                   und Ergebnisse auf Stabilität prüfen.
                 </p>
               </div>
-              <div class="service-actions">
-                <span class="action-disabled">Demnächst verfügbar</span>
+
+              <div class="service-action">
+                <span class="disabled-link">Demnächst</span>
               </div>
             </article>
           </noscript>
         </div>
       </section>
 
-      <section class="principles" aria-label="Grundsätze">
-        <div class="principle">
-          <span class="principle-index">01</span>
-          <p>Direkt im Browser nutzbar.</p>
-        </div>
-        <div class="principle">
-          <span class="principle-index">02</span>
-          <p>Klare Funktion statt Feature-Overload.</p>
-        </div>
-        <div class="principle">
-          <span class="principle-index">03</span>
-          <p>Quellcode dort öffentlich, wo es sinnvoll ist.</p>
-        </div>
+      <section class="about">
+        <p>
+          Die hier veröffentlichten Anwendungen laufen direkt über GitHub Pages.
+          Neue Services werden ergänzt, sobald sie einsatzbereit sind.
+        </p>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <p>© <span id="year"></span> Thomas Asen</p>
-      <p>Hosted on GitHub Pages</p>
+    <footer class="footer">
+      <span>© <span id="year"></span> Thomas Asen</span>
+      <span>GitHub Pages</span>
     </footer>
   </div>
 </body>
