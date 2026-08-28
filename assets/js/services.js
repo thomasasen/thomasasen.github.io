@@ -13,6 +13,15 @@ window.SERVICES = [
     status: "live",
     url: "/dot-voting-calculator/",
     source: "https://github.com/thomasasen/dot-voting-calculator"
+  },
+  {
+    title: "Gantt Studio",
+    category: "Project Planning · Roadmaps",
+    description:
+      "Projektportfolios und Roadmaps im Browser planen – mit Aufgaben, Abhängigkeiten, Phasen, Gates, Baselines, Risiken und lokalem Import/Export.",
+    status: "live",
+    url: "/gantt-studio/",
+    source: "https://github.com/thomasasen/gantt-studio"
   }
 
   /*
