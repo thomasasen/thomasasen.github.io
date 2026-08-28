@@ -1,24 +1,18 @@
 /*
  * Service-Verzeichnis
  * -------------------
- * Hier werden alle Tools gepflegt.
- *
- * Dot Voting später aktivieren:
- *
- * status: "planned"  -> "live"
- * url: null          -> "/dot-voting/"
- * source: null       -> "https://github.com/thomasasen/dot-voting"
+ * Hier werden alle veröffentlichten Tools gepflegt.
  */
 
 window.SERVICES = [
   {
     title: "Dot Voting",
-    category: "Decision Tool",
+    category: "Decision Support",
     description:
-      "Voting-Budgets berechnen, Priorisierungen strukturieren und Ergebnisse auf Stabilität prüfen.",
-    status: "planned",
-    url: null,
-    source: null
+      "Empfohlene Punktzahl mit K-Approval berechnen, Ballots erfassen und Top-W-Ergebnisse auf Tie, Abdeckung und Single-Ballot-Stabilität prüfen.",
+    status: "live",
+    url: "/dot-voting-calculator/",
+    source: "https://github.com/thomasasen/dot-voting-calculator"
   }
 
   /*
