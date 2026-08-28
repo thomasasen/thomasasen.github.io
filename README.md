@@ -36,7 +36,7 @@ Live-Adresse:
 
 ## Aktuelle Services
 
-### Dot Voting
+### Dot Voting – Rechner & Qualitätsprüfung
 
 Live:
 
@@ -46,7 +46,7 @@ Repository:
 
 `https://github.com/thomasasen/dot-voting-calculator`
 
-Der Rechner unterstützt K-Approval-basierte Punktzahl-Empfehlungen, Strukturprüfung, individuelle Ballot-Erfassung, Ranking, Tie-Erkennung an der Top-W-Grenze sowie eine Single-Ballot-/Leave-one-out-Stabilitätsprüfung.
+Der Rechner unterstützt eine K-Approval-basierte Empfehlung für die Punktzahl pro Person, Strukturprüfung, individuelle Voting-Erfassung, Ranking, Tie-Erkennung an der Top-W-Grenze sowie eine Single-Ballot-/Leave-one-out-Stabilitätsprüfung.
 
 ## Neue Services ergänzen
 
@@ -70,9 +70,9 @@ Beispiel:
 `index.html` lädt CSS und JavaScript mit einer Versionsnummer:
 
 ```html
-styles.css?v=3.0.1
-services.js?v=3.0.1
-app.js?v=3.0.1
+styles.css?v=3.0.2
+services.js?v=3.0.2
+app.js?v=3.0.2
 ```
 
 Bei Änderungen an ausgelieferten Assets die Versionsnummer erhöhen. Das reduziert Probleme durch ältere Browser- oder CDN-Caches.
