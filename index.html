@@ -16,10 +16,10 @@
   <meta property="og:url" content="https://thomasasen.github.io/">
 
   <link rel="icon" href="./assets/icons/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/css/styles.css?v=3.0.0">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=3.0.1">
 
-  <script defer src="./assets/js/services.js?v=3.0.0"></script>
-  <script defer src="./assets/js/app.js?v=3.0.0"></script>
+  <script defer src="./assets/js/services.js?v=3.0.1"></script>
+  <script defer src="./assets/js/app.js?v=3.0.1"></script>
 </head>
 
 <body>
@@ -73,22 +73,26 @@
 
         <div id="service-grid" class="service-grid">
           <noscript>
-            <article class="service-card">
+            <article class="service-card is-live">
               <div class="card-header">
-                <span class="service-category">Decision Tool</span>
-                <span class="status status-planned">In Vorbereitung</span>
+                <span class="service-category">Decision Support</span>
+                <span class="status status-live">Verfügbar</span>
               </div>
 
               <div class="card-body">
                 <h3>Dot Voting</h3>
                 <p>
-                  Voting-Budgets berechnen, Priorisierungen strukturieren
-                  und Ergebnisse auf Stabilität prüfen.
+                  Empfohlene Punktzahl mit K-Approval berechnen, Ballots erfassen
+                  und Top-W-Ergebnisse auf Tie, Abdeckung und Single-Ballot-Stabilität prüfen.
                 </p>
               </div>
 
               <div class="card-footer">
-                <span class="card-state">Demnächst verfügbar</span>
+                <a class="card-link" href="/dot-voting-calculator/">Tool öffnen</a>
+                <a class="source-link"
+                   href="https://github.com/thomasasen/dot-voting-calculator"
+                   target="_blank"
+                   rel="noreferrer">GitHub ↗</a>
               </div>
             </article>
           </noscript>
