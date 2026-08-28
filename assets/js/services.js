@@ -6,10 +6,10 @@
 
 window.SERVICES = [
   {
-    title: "Dot Voting",
-    category: "Decision Support",
+    title: "Dot Voting – Rechner & Qualitätsprüfung",
+    category: "K-Approval · Decision Support",
     description:
-      "Empfohlene Punktzahl mit K-Approval berechnen, Ballots erfassen und Top-W-Ergebnisse auf Tie, Abdeckung und Single-Ballot-Stabilität prüfen.",
+      "Empfohlene Punktzahl berechnen, Voting erfassen und die Top-W-Grenze auf Tie, Abdeckung und Single-Ballot-Stabilität prüfen.",
     status: "live",
     url: "/dot-voting-calculator/",
     source: "https://github.com/thomasasen/dot-voting-calculator"
