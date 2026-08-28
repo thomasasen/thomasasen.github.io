@@ -1,62 +1,82 @@
 (() => {
-  const statusLabels = {
+  const STATUS_LABELS = {
     live: "Verfügbar",
     beta: "Beta",
     planned: "In Vorbereitung"
   };
 
-  const services = Array.isArray(window.SERVICES) ? window.SERVICES : [];
-  const container = document.getElementById("service-list");
-  const count = document.getElementById("service-count");
+  const services = Array.isArray(window.SERVICES)
+    ? window.SERVICES
+    : [];
+
+  const grid = document.getElementById("service-grid");
+  const counter = document.getElementById("service-count");
   const year = document.getElementById("year");
 
   if (year) {
     year.textContent = new Date().getFullYear();
   }
 
-  if (count) {
-    const liveCount = services.filter(service => service.status === "live").length;
-    count.textContent =
-      `${String(services.length).padStart(2, "0")} ${services.length === 1 ? "Service" : "Services"} · ` +
-      `${String(liveCount).padStart(2, "0")} verfügbar`;
+  if (counter) {
+    const total = services.length;
+    const live = services.filter(
+      service => service.status === "live"
+    ).length;
+
+    counter.textContent =
+      `${total} ${total === 1 ? "Tool" : "Tools"} · ${live} verfügbar`;
   }
 
-  if (!container) return;
+  if (!grid) {
+    return;
+  }
 
-  container.innerHTML = services.map((service, index) => {
-    const number = String(index + 1).padStart(2, "0");
-    const status = statusLabels[service.status] || service.status;
+  grid.innerHTML = services.map(renderService).join("");
 
-    const tags = Array.isArray(service.tags) && service.tags.length
-      ? `<div class="service-tags">
-          ${service.tags.map(tag => `<span class="service-tag">${escapeHtml(tag)}</span>`).join("")}
-         </div>`
+  function renderService(service) {
+    const statusLabel =
+      STATUS_LABELS[service.status] || service.status;
+
+    const mainAction = service.url
+      ? `<a class="card-link"
+            href="${escapeAttribute(service.url)}">
+            Tool öffnen
+         </a>`
+      : `<span class="card-state">Demnächst verfügbar</span>`;
+
+    const sourceAction = service.source
+      ? `<a class="source-link"
+            href="${escapeAttribute(service.source)}"
+            target="_blank"
+            rel="noreferrer">
+            GitHub ↗
+         </a>`
       : "";
 
-    const action = service.url
-      ? `<a class="action-link" href="${escapeAttribute(service.url)}">Öffnen</a>`
-      : `<span class="disabled-link">Demnächst</span>`;
-
     return `
-      <article class="service ${service.url ? "is-live" : ""}">
-        <div class="service-index">${number}</div>
+      <article class="service-card ${service.url ? "is-live" : ""}">
+        <div class="card-header">
+          <span class="service-category">
+            ${escapeHtml(service.category)}
+          </span>
 
-        <div class="service-content">
-          <div class="service-topline">
-            <span class="service-type">${escapeHtml(service.category)}</span>
-            <span class="status status-${escapeAttribute(service.status)}">${escapeHtml(status)}</span>
-          </div>
+          <span class="status status-${escapeAttribute(service.status)}">
+            ${escapeHtml(statusLabel)}
+          </span>
+        </div>
 
+        <div class="card-body">
           <h3>${escapeHtml(service.title)}</h3>
           <p>${escapeHtml(service.description)}</p>
-          ${tags}
         </div>
 
-        <div class="service-action">
-          ${action}
+        <div class="card-footer">
+          ${mainAction}
+          ${sourceAction}
         </div>
-      </article>`;
-  }).join("");
+      </article>
+    `;
+  }
 
   function escapeHtml(value) {
     return String(value)

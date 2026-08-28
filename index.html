@@ -4,66 +4,82 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Thomas Asen · Tools & Services</title>
-  <meta name="description" content="Webanwendungen, Utilities und Open-Source-Projekte von Thomas Asen.">
-  <meta name="theme-color" content="#f7f7f5">
+
+  <meta name="description"
+        content="Praktische Web-Tools und Utilities von Thomas Asen. Direkt im Browser nutzbar.">
+  <meta name="theme-color" content="#f5f5f2">
 
   <meta property="og:title" content="Thomas Asen · Tools & Services">
-  <meta property="og:description" content="Webanwendungen, Utilities und Open-Source-Projekte.">
+  <meta property="og:description"
+        content="Praktische Web-Tools und Utilities für konkrete Aufgaben.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://thomasasen.github.io/">
 
-  <link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/css/styles.css">
-  <script defer src="/assets/js/services.js"></script>
-  <script defer src="/assets/js/app.js"></script>
+  <link rel="icon" href="./assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=3.0.0">
+
+  <script defer src="./assets/js/services.js?v=3.0.0"></script>
+  <script defer src="./assets/js/app.js?v=3.0.0"></script>
 </head>
 
 <body>
-  <div class="site">
-    <header class="header">
-      <a class="identity" href="/" aria-label="Startseite">
-        <span class="identity-mark" aria-hidden="true">TA</span>
-        <span>Thomas Asen</span>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Startseite">
+        <span class="brand-mark" aria-hidden="true">TA</span>
+        <span class="brand-name">Thomas Asen</span>
       </a>
 
-      <nav class="nav" aria-label="Hauptnavigation">
+      <nav class="site-nav" aria-label="Hauptnavigation">
         <a href="#services">Services</a>
-        <a href="https://github.com/thomasasen" target="_blank" rel="noreferrer">
+        <a href="https://github.com/thomasasen"
+           target="_blank"
+           rel="noreferrer">
           GitHub <span aria-hidden="true">↗</span>
         </a>
       </nav>
     </header>
 
     <main>
-      <section class="intro">
-        <p class="kicker">Tools &amp; Services</p>
-        <h1>Praktische Tools.<br>Direkt nutzbar.</h1>
-        <p class="intro-copy">
-          Kleine Webanwendungen und Utilities für konkrete Aufgaben.
-          Ohne Login, ohne unnötige Komplexität.
-        </p>
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">Tools &amp; Services</p>
+
+          <h1 id="page-title">
+            Praktische Tools für konkrete Aufgaben.
+          </h1>
+
+          <p class="lead">
+            Kleine Webanwendungen und Utilities, direkt im Browser nutzbar.
+            Ohne Login und ohne unnötige Komplexität.
+          </p>
+        </div>
       </section>
 
-      <section id="services" class="services" aria-labelledby="services-heading">
-        <div class="section-title">
+      <section id="services"
+               class="services-section"
+               aria-labelledby="services-title">
+
+        <div class="section-header">
           <div>
-            <p class="section-kicker">Übersicht</p>
-            <h2 id="services-heading">Services</h2>
+            <p class="section-label">Übersicht</p>
+            <h2 id="services-title">Services</h2>
           </div>
-          <p id="service-count" class="service-count" aria-live="polite"></p>
+
+          <p id="service-count"
+             class="service-count"
+             aria-live="polite"></p>
         </div>
 
-        <div id="service-list" class="service-list">
+        <div id="service-grid" class="service-grid">
           <noscript>
-            <article class="service">
-              <div class="service-index">01</div>
+            <article class="service-card">
+              <div class="card-header">
+                <span class="service-category">Decision Tool</span>
+                <span class="status status-planned">In Vorbereitung</span>
+              </div>
 
-              <div class="service-content">
-                <div class="service-topline">
-                  <span class="service-type">Decision Tool</span>
-                  <span class="status status-planned">In Vorbereitung</span>
-                </div>
-
+              <div class="card-body">
                 <h3>Dot Voting</h3>
                 <p>
                   Voting-Budgets berechnen, Priorisierungen strukturieren
@@ -71,25 +87,28 @@
                 </p>
               </div>
 
-              <div class="service-action">
-                <span class="disabled-link">Demnächst</span>
+              <div class="card-footer">
+                <span class="card-state">Demnächst verfügbar</span>
               </div>
             </article>
           </noscript>
         </div>
       </section>
 
-      <section class="about">
+      <section class="note-section" aria-label="Hinweis">
         <p>
-          Die hier veröffentlichten Anwendungen laufen direkt über GitHub Pages.
-          Neue Services werden ergänzt, sobald sie einsatzbereit sind.
+          Weitere Tools werden ergänzt, sobald sie einsatzbereit sind.
         </p>
       </section>
     </main>
 
-    <footer class="footer">
+    <footer class="site-footer">
       <span>© <span id="year"></span> Thomas Asen</span>
-      <span>GitHub Pages</span>
+      <a href="https://github.com/thomasasen"
+         target="_blank"
+         rel="noreferrer">
+        GitHub ↗
+      </a>
     </footer>
   </div>
 </body>

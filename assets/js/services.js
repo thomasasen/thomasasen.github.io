@@ -1,3 +1,15 @@
+/*
+ * Service-Verzeichnis
+ * -------------------
+ * Hier werden alle Tools gepflegt.
+ *
+ * Dot Voting später aktivieren:
+ *
+ * status: "planned"  -> "live"
+ * url: null          -> "/dot-voting/"
+ * source: null       -> "https://github.com/thomasasen/dot-voting"
+ */
+
 window.SERVICES = [
   {
     title: "Dot Voting",
@@ -6,22 +18,20 @@ window.SERVICES = [
       "Voting-Budgets berechnen, Priorisierungen strukturieren und Ergebnisse auf Stabilität prüfen.",
     status: "planned",
     url: null,
-    source: null,
-    tags: ["Voting", "Priorisierung", "Analyse"]
+    source: null
   }
 
   /*
-  Später aktivieren:
+  Beispiel für einen weiteren Service:
 
-  {
-    title: "Dot Voting",
-    category: "Decision Tool",
+  ,{
+    title: "PDF → EPUB",
+    category: "Utility",
     description:
-      "Voting-Budgets berechnen, Priorisierungen strukturieren und Ergebnisse auf Stabilität prüfen.",
-    status: "live",
-    url: "/dot-voting/",
-    source: "https://github.com/thomasasen/dot-voting",
-    tags: ["Voting", "Priorisierung", "Analyse"]
+      "PDF-Dokumente für E-Reader aufbereiten und als EPUB ausgeben.",
+    status: "beta",
+    url: "/pdf2epub/",
+    source: "https://github.com/thomasasen/pdf2epub"
   }
   */
 ];
