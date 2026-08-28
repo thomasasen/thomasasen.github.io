@@ -48,6 +48,18 @@ Repository:
 
 Der Rechner unterstützt eine K-Approval-basierte Empfehlung für die Punktzahl pro Person, Strukturprüfung, individuelle Voting-Erfassung, Ranking, Tie-Erkennung an der Top-W-Grenze sowie eine Single-Ballot-/Leave-one-out-Stabilitätsprüfung.
 
+### Gantt Studio
+
+Live:
+
+`https://thomasasen.github.io/gantt-studio/`
+
+Repository:
+
+`https://github.com/thomasasen/gantt-studio`
+
+Browserbasierte Projektplanung für Projektportfolios und Roadmaps mit Aufgaben, Abhängigkeiten, Phasen, Gates, Baselines, Risiken, mehreren Ansichten sowie lokalem Import und Export. Projekt- und Planungsdaten werden lokal im Browser gespeichert.
+
 ## Neue Services ergänzen
 
 Neue Tools werden in `assets/js/services.js` als weitere Einträge in `window.SERVICES` ergänzt.
@@ -70,9 +82,9 @@ Beispiel:
 `index.html` lädt CSS und JavaScript mit einer Versionsnummer:
 
 ```html
-styles.css?v=3.0.2
-services.js?v=3.0.2
-app.js?v=3.0.2
+styles.css?v=3.0.4
+services.js?v=3.0.4
+app.js?v=3.0.4
 ```
 
 Bei Änderungen an ausgelieferten Assets die Versionsnummer erhöhen. Das reduziert Probleme durch ältere Browser- oder CDN-Caches.
