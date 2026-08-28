@@ -32,6 +32,34 @@
   }
 
   grid.innerHTML = services.map(renderService).join("");
+  enableClickableCards();
+
+  function enableClickableCards() {
+    grid.querySelectorAll(".service-card[data-url]").forEach(card => {
+      const url = card.dataset.url;
+
+      card.addEventListener("click", event => {
+        if (event.target.closest("a")) {
+          return;
+        }
+
+        window.location.href = url;
+      });
+
+      card.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+
+        if (event.target.closest("a")) {
+          return;
+        }
+
+        event.preventDefault();
+        window.location.href = url;
+      });
+    });
+  }
 
   function renderService(service) {
     const statusLabel =
@@ -53,8 +81,12 @@
          </a>`
       : "";
 
+    const cardAttributes = service.url
+      ? `data-url="${escapeAttribute(service.url)}" role="link" tabindex="0" aria-label="${escapeAttribute(service.title)} öffnen"`
+      : "";
+
     return `
-      <article class="service-card ${service.url ? "is-live" : ""}">
+      <article class="service-card ${service.url ? "is-live" : ""}" ${cardAttributes}>
         <div class="card-header">
           <span class="service-category">
             ${escapeHtml(service.category)}
