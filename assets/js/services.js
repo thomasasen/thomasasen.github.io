@@ -22,6 +22,15 @@ window.SERVICES = [
     status: "live",
     url: "/gantt-studio/",
     source: "https://github.com/thomasasen/gantt-studio"
+  },
+  {
+    title: "MEDDPICC Workbench",
+    category: "Enterprise Sales · Qualification",
+    description:
+      "Local-first Workbench für strukturierte MEDDPICC-Qualifizierung, Evidenzmanagement, Deal Planning und portable Projektdateien.",
+    status: "live",
+    url: "/meddpicc-workbench/",
+    source: "https://github.com/thomasasen/meddpicc-workbench"
   }
 
   /*
