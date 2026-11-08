@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <script defer src="app.js?v=20261108-clear-preview"></script>
+  <link rel="stylesheet" href="styles.css?v=20261108-creative-v2">
+  <script defer src="app.js?v=20261108-creative-v2"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -45,6 +45,11 @@
                 <path d="M320 27 L323 35 L331 38 L323 41 L320 49 L317 41 L309 38 L317 35Z" fill="#fff3cf" opacity=".91"/>
               </g>
             </svg>
+            <div id="winnerStage" class="winner-stage" aria-hidden="true" hidden>
+              <div class="winner-stage-glint"></div>
+              <span class="winner-stage-kicker" id="winnerStageKicker"></span>
+              <strong class="winner-stage-title" id="winnerStageTitle"></strong>
+            </div>
             <div class="power-meter" id="powerMeter" role="meter" aria-label="Aktuelle Drehkraft" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 Prozent Drehkraft">
               <span class="power-meter-title" aria-hidden="true">KRAFT</span>
               <div class="power-meter-track" aria-hidden="true"><div class="power-meter-fill" id="powerFill"></div><div class="power-meter-tip" id="powerTip"></div></div>

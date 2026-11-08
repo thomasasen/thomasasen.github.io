@@ -263,89 +263,157 @@
     highlightedWinner=null;
     const group=$('winnerHighlight');
     if(group){group.classList.remove('is-visible');group.replaceChildren();}
+    wheel.querySelectorAll('.winner-item-lifted').forEach(node=>node.classList.remove('winner-item-lifted'));
+    const stage=$('winnerStage');
+    if(stage){stage.hidden=true;stage.classList.remove('is-visible');}
   }
   // All winner geometry lives inside the rotating SVG group, so it remains
   // registered to the actual winning wedge at any sector count or stop angle.
+  // Each effect has a distinct visual language; the exact winning sector is
+  // the sole geometry source for every overlay. These elements are decorative.
   function showWinnerHighlight(index){
-    const group=$('winnerHighlight'),n=config.segments.length;
+    const group=$('winnerHighlight'),stage=$('winnerStage'),n=config.segments.length;
     if(!group||!Number.isInteger(index)||index<0||index>=n)return;
     highlightedWinner=index;
     group.classList.remove('is-visible');
     group.replaceChildren();
-    const step=360/n, center=-90+index*step;
-    const effect=config.winnerEffect, strength=config.winnerStrength;
-    const multiplier={subtle:.65,refined:1,show:1.35}[strength];
+    wheel.querySelectorAll('.winner-item-lifted').forEach(node=>node.classList.remove('winner-item-lifted'));
+    stage.hidden=true;
+    stage.classList.remove('is-visible');
+    const step=360/n,center=-90+index*step;
+    const effect=config.winnerEffect,strength=config.winnerStrength;
+    const mult={subtle:.72,refined:1,show:1.33}[strength]||1;
+    const dim={subtle:.40,refined:.62,show:.76}[strength]||.62;
     group.dataset.effect=effect;
     group.dataset.strength=strength;
-    group.style.setProperty('--winner-dim',String(({subtle:.22,refined:.39,show:.57})[strength]));
-    group.style.setProperty('--winner-fill',String(({subtle:.11,refined:.19,show:.3})[strength]));
-    group.style.setProperty('--winner-stroke',String(2.5*multiplier));
-    const sectorPath=(r)=>n===1?null:wedgePath(center-step/2,center+step/2,r);
-    // Other sectors are dimmed without putting a dark shape over the winning
-    // sector or hiding its label. Only the disk, not the golden rim, is shaded.
-    if(effect==='spotlight'||effect==='cinematic'){
-      const shade=e('g',{class:'winner-shade','clip-path':'url(#faceClip)'},group);
-      if(n>100){
-        // For very dense wheels, one even-odd path replaces thousands of
-        // individual shadow wedges and cuts out the selected sector exactly.
-        const disk='M585 320 A265 265 0 1 0 55 320 A265 265 0 1 0 585 320 Z';
-        e('path',{d:disk+' '+sectorPath(265),class:'winner-shade-sector','fill-rule':'evenodd'},shade);
-      }else{
-        for(let j=0;j<n;j++){
-          if(j===index)continue;
-          const mid=-90+j*step;
-          if(n===1)continue;
-          e('path',{d:wedgePath(mid-step/2,mid+step/2,265),class:'winner-shade-sector'},shade);
-        }
-      }
-    }
-    // Lift duplicates the exact wedge and its SVG label/icon within an offset
-    // group, preventing an artificial highlight border detached from the text.
-    if(effect==='lift'){
-      const offset=7*multiplier,rad=center*Math.PI/180;
-      const [dx,dy]=[Math.cos(rad)*offset,Math.sin(rad)*offset];
-      const lift=e('g',{class:'winner-lift',transform:`translate(${dx.toFixed(3)} ${dy.toFixed(3)})`},group);
-      if(n===1)e('circle',{cx:320,cy:320,r:258,fill:config.segments[index].color,class:'winner-lift-face'},lift);
-      else e('path',{d:sectorPath(258),fill:config.segments[index].color,class:'winner-lift-face'},lift);
+    group.style.setProperty('--winner-dim',String(dim));
+    group.style.setProperty('--winner-stroke',String(2.5*mult));
+    const sectorPath=r=>n===1?circlePath(320,320,r):wedgePath(center-step/2,center+step/2,r);
+    const [winnerX,winnerY]=polar(188,center);
+    // Shared subtle marker is deliberately omitted: modes must look different.
+    if(effect==='outline'){
+      const under=e('path',{d:sectorPath(263),class:'winner-outline-rest'},group);
+      const trace=e('path',{d:sectorPath(263),class:'winner-outline-trace'},group);
+      const length=Math.ceil(trace.getTotalLength());
+      trace.style.strokeDasharray=`${length} ${length}`;
+      trace.style.setProperty('--trace-length',String(length));
+      const [p1x,p1y]=polar(260,center-step/2),[p2x,p2y]=polar(260,center+step/2);
+      for(const [x,y] of [[p1x,p1y],[p2x,p2y]])e('circle',{cx:x,cy:y,r:4*mult,class:'winner-outline-jewel'},group);
+    }else if(effect==='spotlight'){
+      shadeOtherSectors(group,index,n,step,dim);
+      makeSpotBeam(group,sectorPath,center,mult);
+    }else if(effect==='lift'){
+      const offset=17*mult,rad=center*Math.PI/180;
+      const dx=Math.cos(rad)*offset,dy=Math.sin(rad)*offset;
+      e('path',{d:sectorPath(261),class:'winner-lift-groove'},group);
+      const lift=e('g',{class:'winner-lift',transform:`translate(${dx.toFixed(2)} ${dy.toFixed(2)})`},group);
+      const moving=e('g',{class:'winner-lift-motion'},lift);
+      moving.style.setProperty('--lift-x',`${-dx.toFixed(2)}px`);
+      moving.style.setProperty('--lift-y',`${-dy.toFixed(2)}px`);
+      if(n===1)e('circle',{cx:320,cy:320,r:259,fill:config.segments[index].color,class:'winner-lift-face'},moving);
+      else e('path',{d:sectorPath(259),fill:config.segments[index].color,class:'winner-lift-face'},moving);
       const original=wheel.querySelector(`[data-wheel-item="${index}"]`);
-      if(original)lift.appendChild(original.cloneNode(true));
-    }
-    // Always retain a clear selection, even after animated effects finish.
-    if(n===1)e('circle',{cx:320,cy:320,r:264,class:'winner-highlight-surface'},group);
-    else e('path',{d:sectorPath(264),class:'winner-highlight-surface','stroke-width':n>80?1:n>24?1.7:2.5*multiplier},group);
-    if(effect==='lights'||effect==='cinematic'){
-      const studs=e('g',{class:'winner-studs'},group);
-      const count=56;
-      const distance=(a,b)=>Math.abs((((a-b)%360)+540)%360-180);
-      let selected=[];
-      for(let j=0;j<count;j++){
-        const angle=j*360/count-90;
-        if(n===1||distance(angle,center)<=step/2+0.2)selected.push(j);
+      if(original){moving.appendChild(original.cloneNode(true));original.classList.add('winner-item-lifted');}
+      e('path',{d:sectorPath(259),class:'winner-lift-shimmer'},moving);
+    }else if(effect==='lights'){
+      makeMarquee(group,index,n,step,mult);
+      e('path',{d:sectorPath(260),class:'winner-lights-wedge'},group);
+    }else if(effect==='celebration'){
+      makeFireworks(group,center,step,mult);
+      const halo=e('circle',{cx:winnerX,cy:winnerY,r:24,class:'winner-burst-halo'},group);
+      halo.style.setProperty('--halo-scale',String(2.8*mult));
+    }else if(effect==='cinematic'){
+      shadeOtherSectors(group,index,n,step,dim*.80);
+      makeSpotBeam(group,sectorPath,center,mult);
+      makeMarquee(group,index,n,step,mult);
+      const rings=e('g',{class:'winner-cinema-rings'},group);
+      for(let j=0;j<3;j++){
+        const ring=e('circle',{cx:winnerX,cy:winnerY,r:13+j*14,class:'winner-cinema-ring'},rings);
+        ring.style.animationDelay=`${j*260}ms`;
       }
-      // Very narrow sectors still get a luminous stud at their center.
-      if(!selected.length)selected=[Math.round(((center+90)/360)*count)%count];
-      selected.forEach((j,k)=>{
-        const [x,y]=polar(291,j*360/count-90);
-        const bulb=e('circle',{cx:x,cy:y,r:5.4*multiplier,class:'winner-stud'},studs);
-        bulb.style.animationDelay=`${Math.min(k,20)*70}ms`;
-      });
+      e('path',{d:sectorPath(263),class:'winner-cinema-gold'},group);
+      e('circle',{cx:320,cy:320,r:279,class:'winner-cinema-orbit'},group);
     }
-    if(effect==='celebration'){
-      const glitters=e('g',{class:'winner-particles'},group),amount=Math.round(16*multiplier);
-      const arc=Math.min(45,Math.max(7,step*.43));
-      for(let i=0;i<amount;i++){
-        const phi=center+((i/Math.max(1,amount-1))-.5)*arc*2;
-        const [x,y]=polar(230+(i%5)*8,phi);
-        const particle=e('path',{d:'M0 -5 L1.5 -1.5 L5 0 L1.5 1.5 L0 5 L-1.5 1.5 L-5 0 L-1.5 -1.5Z',transform:`translate(${x.toFixed(2)} ${y.toFixed(2)})`,class:'winner-particle'},glitters);
-        const offset=phi*Math.PI/180;
-        particle.style.setProperty('--spark-x',`${(Math.cos(offset)*(13+i%6*5)).toFixed(2)}px`);
-        particle.style.setProperty('--spark-y',`${(Math.sin(offset)*(13+i%6*5)).toFixed(2)}px`);
-        particle.style.animationDelay=`${i%6*95}ms`;
-      }
-    }
-    // Reading and clicking stays possible: all overlays ignore pointer events.
+    const names={outline:'GOLDEN EDGE',spotlight:'CASINO SPOTLIGHT',lift:'GOLDEN LIFT',lights:'JACKPOT LIGHTS',celebration:'GOLDEN CELEBRATION',cinematic:'CASINO CINEMATIC'};
+    stage.dataset.effect=effect;
+    stage.dataset.strength=strength;
+    $('winnerStageKicker').textContent=names[effect]||'GEWINN';
+    $('winnerStageTitle').textContent=safeText(config.segments[index].label);
+    stage.hidden=false;
+    // Restart entrance timelines on repeated previews of the same winner.
     void group.getBoundingClientRect();
     group.classList.add('is-visible');
+    void stage.getBoundingClientRect();
+    stage.classList.add('is-visible');
+  }
+  function circlePath(cx,cy,r){return `M ${cx-r} ${cy} a ${r} ${r} 0 1 0 ${2*r} 0 a ${r} ${r} 0 1 0 ${-2*r} 0 Z`;}
+  function shadeOtherSectors(group,index,n,step,dim){
+    if(n===1)return;
+    const shade=e('g',{class:'winner-shade','clip-path':'url(#faceClip)'},group);
+    shade.style.setProperty('--winner-dim',String(dim));
+    if(n>100){
+      const disk=circlePath(320,320,265);
+      e('path',{d:disk+' '+wedgePath(-90+(index-.5)*step,-90+(index+.5)*step,265),'fill-rule':'evenodd',class:'winner-shade-sector'},shade);
+    }else{
+      for(let j=0;j<n;j++){
+        if(j===index)continue;
+        const mid=-90+j*step;
+        e('path',{d:wedgePath(mid-step/2,mid+step/2,265),class:'winner-shade-sector'},shade);
+      }
+    }
+  }
+  function makeSpotBeam(group,sectorPath,center,mult){
+    const defs=e('defs',{},group);
+    const grad=e('radialGradient',{id:'winner-spot-glow',cx:'45%',cy:'38%',r:'70%'},defs);
+    for(const [offset,color,opacity] of [['0%','#fffce5','.92'],['36%','#ffd681','.52'],['100%','#ffe29b','0']])
+      e('stop',{offset,'stop-color':color,'stop-opacity':opacity},grad);
+    const clip=e('clipPath',{id:'winner-spot-sector'},defs);
+    e('path',{d:sectorPath(266)},clip);
+    const beam=e('g',{'clip-path':'url(#winner-spot-sector)',class:'winner-spot-beam'},group);
+    const [x,y]=polar(178,center);
+    e('ellipse',{cx:x,cy:y,rx:100*mult,ry:155*mult,fill:'url(#winner-spot-glow)',class:'winner-spot-core'},beam);
+    const [ax,ay]=polar(68,center),[bx,by]=polar(258,center);
+    e('path',{d:`M ${ax} ${ay} L ${bx} ${by}`,class:'winner-spot-ray'},beam);
+    e('circle',{cx:x,cy:y,r:36*mult,class:'winner-spot-flare'},beam);
+  }
+  function makeMarquee(group,index,n,step,mult){
+    const ring=e('g',{class:'winner-marquee'},group);
+    e('circle',{cx:320,cy:320,r:291,class:'winner-marquee-orbit'},ring);
+    const center=-90+index*step;
+    const distance=(a,b)=>Math.abs((((a-b)%360)+540)%360-180);
+    let closest=0,smallest=Infinity;
+    for(let j=0;j<56;j++){
+      const angle=j*360/56-90;
+      const gap=distance(angle,center);
+      if(gap<smallest){smallest=gap;closest=j;}
+    }
+    for(let j=0;j<56;j++){
+      const angle=j*360/56-90;
+      const [x,y]=polar(291,angle);
+      const targeted=n===1||distance(angle,center)<=step/2+.01||j===closest;
+      const bulb=e('circle',{cx:x,cy:y,r:targeted?5.7*mult:4.1,class:targeted?'winner-marquee-bulb is-target':'winner-marquee-bulb'},ring);
+      bulb.style.animationDelay=`${(j*23).toFixed(0)}ms`;
+    }
+  }
+  function makeFireworks(group,center,step,mult){
+    const bursts=e('g',{class:'winner-fireworks'},group);
+    const amount=Math.round(39*mult);
+    const [cx,cy]=polar(193,center);
+    const span=Math.min(44,Math.max(9,step*.4));
+    for(let i=0;i<amount;i++){
+      const phi=(360*i/amount+Math.sin(i*11)*19)*Math.PI/180;
+      const drift=50+(i%6)*12;
+      const dx=Math.cos(phi)*drift*mult,dy=Math.sin(phi)*drift*mult;
+      const shape=i%4===0?'M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2Z':null;
+      const orbit=center+(i%7-3)*span/6;
+      const [x,y]=polar(184+(i%5)*10,orbit);
+      const item=shape?e('path',{d:shape,transform:`translate(${x} ${y})`,class:'winner-firework-star'},bursts):e('circle',{cx:x,cy:y,r:2+(i%3),class:'winner-firework-dot'},bursts);
+      item.style.setProperty('--spark-x',`${dx.toFixed(1)}px`);
+      item.style.setProperty('--spark-y',`${dy.toFixed(1)}px`);
+      item.style.animationDelay=`${(i%9)*65}ms`;
+    }
+    // Deliberately use a different flash from the casino cinematic light sweep.
+    e('circle',{cx,cy,r:12,class:'winner-firework-wave'},bursts);
   }
   function drawWheel(){
     const n=config.segments.length;
@@ -542,7 +610,7 @@
     if(!previewEffectTimer)return;
     clearTimeout(previewEffectTimer);
     previewEffectTimer=0;
-    // Restore normal dimming while keeping the editor open.
+    // Leave the editor open. Only the preview-specific backdrop override ends.
     editorBackdrop.classList.remove('is-effect-preview');
     if(!isSpinning){
       if(previewPreviousWinner===null)clearWinnerHighlight();
@@ -558,7 +626,7 @@
       previewPreviousWinner=highlightedWinner;
       previewPreviousStatus=$('statusText').textContent;
     }else clearTimeout(previewEffectTimer);
-    // Only remove background blur/overlay; the drawer remains visible.
+    // Keep the drawer and its scroll position, but reveal the unblurred wheel.
     editorBackdrop.classList.add('is-effect-preview');
     $('spinHub').disabled=true; // preview must not accidentally trigger a spin
     showWinnerHighlight(previewPreviousWinner??currentIndex(rotation,config.segments.length));
@@ -673,7 +741,9 @@
   $('customIconName').addEventListener('keydown',ev=>{if(ev.key==='Enter')setIconForCurrent(ev.target.value.trim().toLowerCase());});
   // Präsentationsmodus: nur EINE Radinstanz wird verschoben, sodass Ergebnis,
   // Bedienbarkeit und Animation in beiden Layouts immer synchron bleiben.
-  // Preview the actual wheel without the dimmed/blurred configuration drawer.
+  // The effect preview uses the existing full-screen wheel stage. This removes
+  // the blurred/dimmed editor backdrop completely, rather than trying to show
+  // a winner effect behind the settings drawer.
   let effectPreviewActive=false;
   function openPresentation({winnerPreview=false}={}){
     if(isSpinning)return;
@@ -703,7 +773,9 @@
     wheelStage.appendChild(assembly);
     if(effectPreviewActive){
       effectPreviewActive=false;
-      editorToggle.focus(); // Establish a visible focus-return target before reopening the dialog.
+      // Return focus to an element in the page *before* reopening the dialog;
+      // otherwise the next editor close could target the hidden overlay button.
+      editorToggle.focus();
       setEditorOpen(true);
       $('previewWinnerEffect').focus();
     }else{

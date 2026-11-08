@@ -43,7 +43,7 @@
 .btn-editor-toggle:hover{border-color:#dfb779;background:#583839}
 .editor-gear{font-size:17px;line-height:1}
 .editor-backdrop{position:fixed;inset:0;z-index:45;background:rgba(7,4,7,.68);backdrop-filter:blur(3px);transition:none!important}
-/* Show the real wheel for four seconds without dismissing the settings drawer. */
+/* Temporarily reveal the wheel during a winner preview; the editor stays visible. */
 .editor-backdrop.is-effect-preview{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
 .editor-panel{position:fixed;z-index:46;inset:0 0 0 auto;width:min(520px,100vw);height:100dvh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:0;border-block:0;border-right:0;scrollbar-color:#79515d #20151b}
 .editor-panel .segment-list{max-height:none;overflow:visible}
@@ -96,30 +96,80 @@ body.editor-open{overflow:hidden}
 @media(max-width:520px){.setting-row-coast{gap:6px}.setting-descriptor{max-width:170px}.setting-value input[type=range]{width:105px}}
 
 
-/* Casino Noir: configurable winner effects, always following real sector geometry. */
-.winner-settings{margin:15px 0 7px;padding:16px 13px;border:1px solid #755040;border-radius:11px;background:linear-gradient(140deg,#302027,#20151d)}
-.editor-settings .winner-settings h3{margin:0 0 14px;font:normal 19px Georgia,serif;color:#f6d9ac}
-.winner-control{display:flex;flex-direction:column;gap:6px;margin:10px 0}
-.winner-control label{font-size:12px;color:#e8cbbb;font-weight:650}
-.winner-control select{width:100%;max-width:100%;background:#1a1218;color:#f9e4c9;border:1px solid #785044;border-radius:7px;padding:10px 12px;font:12px system-ui,sans-serif}
-.winner-preview{width:100%;margin:3px 0 9px;border-color:#926e53;color:#f8d9a9}
-.winner-setting-note{font-size:11px;line-height:1.55;color:#c2a5a1;margin:8px 0 0}
-.winner-highlight{opacity:0;pointer-events:none;--winner-fill:.19;--winner-dim:.39;--winner-stroke:2.5px}
-.winner-highlight.is-visible{opacity:1;animation:none}
-.winner-highlight-surface{fill:#ffe1a0;fill-opacity:var(--winner-fill);stroke:#ffebaa;stroke-width:var(--winner-stroke);stroke-linejoin:round;filter:drop-shadow(0 0 5px #ffc877)}
-.winner-highlight.is-visible .winner-highlight-surface{animation:winner-edge-glow 1.25s ease-in-out 2}
-.winner-shade-sector{fill:#050306;fill-opacity:var(--winner-dim)}
-.winner-shade{pointer-events:none}
-.winner-lift{filter:drop-shadow(0 3px 5px #000d)}
-.winner-lift-face{stroke:#ffe6aa;stroke-width:2.7px;stroke-linejoin:round}
-.winner-stud{fill:#fff0b0;stroke:#ffcf66;stroke-width:2px;filter:drop-shadow(0 0 5px #ffda7f)}
-.winner-highlight.is-visible .winner-stud{animation:winner-bulb 660ms ease-in-out 3 both}
-.winner-particle{fill:#ffe7a3;filter:drop-shadow(0 0 3px #ffd177);opacity:0}
-.winner-highlight.is-visible .winner-particle{animation:winner-sparkle 1.5s ease-out 2 both}
-@keyframes winner-edge-glow{0%,100%{stroke:#ffe5a0;filter:drop-shadow(0 0 4px #e6a348)}50%{stroke:#fffce5;filter:drop-shadow(0 0 12px #ffd887)}}
-@keyframes winner-bulb{0%,100%{opacity:.7;filter:drop-shadow(0 0 3px #fcca71)}50%{opacity:1;filter:drop-shadow(0 0 11px #ffedac)}}
-@keyframes winner-sparkle{0%{opacity:0;translate:0 0;scale:.3}18%{opacity:1;scale:1}75%{opacity:1}100%{opacity:0;translate:var(--spark-x) var(--spark-y);scale:.3}}
+/* Distinct winning experiences. Each mode has its own motion language and geometry. */
+.winner-highlight{opacity:0;pointer-events:none}
+.winner-highlight.is-visible{opacity:1}
+.winner-outline-rest{fill:rgba(255,212,128,.025);stroke:#fce1aa;stroke-width:2;opacity:.55}
+.winner-outline-trace{fill:none;stroke:#fff5bc;stroke-width:5;stroke-linejoin:round;stroke-linecap:round;filter:drop-shadow(0 0 8px #ffbd52)}
+.winner-highlight.is-visible .winner-outline-trace{animation:winner-trace-draw 1.55s cubic-bezier(.28,.1,.17,1) 1 forwards}
+.winner-outline-jewel{fill:#fff4c5;filter:drop-shadow(0 0 8px #ffc36b)}
+@keyframes winner-trace-draw{from{stroke-dashoffset:var(--trace-length);opacity:.5}to{stroke-dashoffset:0;opacity:1}}
+.winner-shade-sector{fill:#050308;fill-opacity:var(--winner-dim,.62)}
+.winner-spot-core{mix-blend-mode:screen}
+.winner-spot-beam{opacity:.97}
+.winner-highlight.is-visible .winner-spot-beam{animation:winner-spot-scan 2.7s ease-in-out 1 both}
+.winner-spot-ray{stroke:#fff0c3;stroke-width:4;stroke-linecap:round;opacity:.85;filter:drop-shadow(0 0 8px #ffcc63)}
+.winner-spot-flare{fill:#ffdf87;fill-opacity:.18;stroke:#fff2cb;stroke-width:2.2;filter:drop-shadow(0 0 13px #f9c36b)}
+@keyframes winner-spot-scan{0%{translate:-65px 0;opacity:.17}42%{translate:25px 0;opacity:1}66%{translate:-9px 0;opacity:1}100%{translate:0 0;opacity:.83}}
+.winner-item-lifted{opacity:0}
+.winner-lift-groove{fill:#050307;fill-opacity:.79;stroke:#12080d;stroke-width:5;filter:drop-shadow(0 1px 6px #000)}
+.winner-lift{filter:drop-shadow(0 12px 11px #000e)}
+.winner-lift-face{stroke:#ffe1a3;stroke-width:4;stroke-linejoin:round;filter:drop-shadow(0 0 5px #ffdb90)}
+.winner-lift-shimmer{fill:none;stroke:#ffefc3;stroke-width:1.8;stroke-dasharray:10 22}
+.winner-highlight.is-visible .winner-lift-motion{animation:winner-lift-eject 1.25s cubic-bezier(.16,1.6,.35,1) 1 both}
+@keyframes winner-lift-eject{0%{translate:var(--lift-x) var(--lift-y)}65%{translate:4px -5px}100%{translate:0 0}}
+.winner-marquee-orbit{fill:none;stroke:#ff539d;stroke-width:3;stroke-dasharray:11 13;filter:drop-shadow(0 0 7px #ff3189)}
+.winner-highlight.is-visible .winner-marquee-orbit{animation:winner-orbit 1.8s linear 2}
+@keyframes winner-orbit{from{stroke-dashoffset:0}to{stroke-dashoffset:-140}}
+.winner-marquee-bulb{fill:#d22b78;stroke:#5c1733;stroke-width:1;opacity:.17}
+.winner-marquee-bulb.is-target{fill:#ffefae;stroke:#f7bd5d;opacity:1;filter:drop-shadow(0 0 10px #ffe0a1)}
+.winner-highlight.is-visible .winner-marquee-bulb{animation:winner-led-travel 760ms ease-in-out 2}
+@keyframes winner-led-travel{0%,100%{opacity:.2}25%,55%{opacity:1;fill:#ffecc1;filter:drop-shadow(0 0 12px #ff57a2)}75%{opacity:.3}}
+.winner-lights-wedge{fill:transparent;stroke:#ff59a0;stroke-width:3.5;filter:drop-shadow(0 0 9px #f42a82)}
+.winner-firework-star,.winner-firework-dot{fill:#ffe8a6;opacity:0;filter:drop-shadow(0 0 6px #ff82bb)}
+.winner-firework-dot:nth-child(3n){fill:#f93e8d}
+.winner-highlight.is-visible .winner-firework-star,.winner-highlight.is-visible .winner-firework-dot{animation:winner-particle-flight 1750ms cubic-bezier(.18,.6,.43,1) 2 both}
+@keyframes winner-particle-flight{0%{opacity:0;translate:0 0;scale:.25}15%{opacity:1;scale:1.2}65%{opacity:1}100%{translate:var(--spark-x) var(--spark-y);opacity:0;scale:.35}}
+.winner-firework-wave,.winner-burst-halo{transform-box:fill-box;transform-origin:center;fill:none;stroke:#fff1b8;stroke-width:4;opacity:0;filter:drop-shadow(0 0 9px #ffc96e)}
+.winner-highlight.is-visible .winner-firework-wave,.winner-highlight.is-visible .winner-burst-halo{animation:winner-blast-wave 1.5s ease-out 2 both}
+@keyframes winner-blast-wave{0%{opacity:.9;stroke-width:5;scale:.3}70%{opacity:.4}100%{opacity:0;scale:2;stroke-width:.3}}
+.winner-cinema-ring{transform-box:fill-box;transform-origin:center;fill:none;stroke:#fff0ba;stroke-width:3;opacity:0;filter:drop-shadow(0 0 7px #ffd77d)}
+.winner-highlight.is-visible .winner-cinema-ring{animation:winner-cinema-ring-wave 1.7s ease-out 2}
+@keyframes winner-cinema-ring-wave{0%{opacity:0;stroke-width:8;scale:.2}30%{opacity:1}100%{opacity:0;scale:1.7;stroke-width:.5}}
+.winner-cinema-gold{fill:#ffdf92;fill-opacity:.10;stroke:#fff0be;stroke-width:3;filter:drop-shadow(0 0 9px #ffc773)}
+.winner-highlight.is-visible .winner-cinema-gold{animation:winner-cinema-reveal 2.4s ease-in-out 1 both}
+@keyframes winner-cinema-reveal{0%,25%{opacity:0}45%{opacity:1}60%{opacity:.3}100%{opacity:1}}
+.winner-cinema-orbit{fill:none;stroke:#ffd38b;stroke-width:3;stroke-dasharray:38 16;opacity:.85;filter:drop-shadow(0 0 7px #ffc777)}
+.winner-highlight.is-visible .winner-cinema-orbit{animation:winner-cinema-orbit 2.5s linear 1}
+@keyframes winner-cinema-orbit{from{stroke-dashoffset:300}to{stroke-dashoffset:0}}
+/* The stage plaque is anchored to the wheel, not to the configuration drawer. */
+.winner-stage{position:absolute;z-index:4;left:50%;bottom:5%;transform:translateX(-50%);max-width:74%;min-width:135px;pointer-events:none;text-align:center;user-select:none;border:1px solid #d4a864;border-radius:5px;padding:7px 14px 8px;background:linear-gradient(120deg,#201319e8,#4c2233eb,#211418e8);box-shadow:0 7px 25px #000d,0 0 18px #e1a56055;isolation:isolate}
+.winner-stage[hidden]{display:none!important}
+.winner-stage-kicker{position:relative;display:block;color:#f3cb8b;font:800 clamp(6px,1vw,11px)/1.3 system-ui,sans-serif;letter-spacing:.19em;text-transform:uppercase}
+.winner-stage-title{position:relative;display:block;color:#fff0d2;font:600 clamp(10px,2vw,23px)/1.2 Georgia,serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px;text-shadow:0 2px 8px #000d}
+.winner-stage-glint{position:absolute;inset:0;pointer-events:none;opacity:0}
+.winner-stage[data-effect=outline]{border-radius:15px;border-color:#e1b77b;background:#1c1319ee;box-shadow:0 3px 12px #0009;min-width:0;padding:5px 15px}
+.winner-stage[data-effect=outline] .winner-stage-kicker{font-size:8px}
+.winner-stage[data-effect=outline] .winner-stage-title{font-size:clamp(11px,1.3vw,16px)}
+.winner-stage[data-effect=spotlight]{border-radius:40px;background:linear-gradient(110deg,#0e0b0def,#2c241aee,#0e0b0def);box-shadow:0 0 15px #ffe3a766,0 7px 25px #000d}
+.winner-stage[data-effect=lift]{background:linear-gradient(#7d5427,#d9ae6f 13%,#59321c 23%,#261714 75%,#b78141 100%);box-shadow:0 12px 19px #000d;transform:translateX(-50%) perspective(280px) rotateX(9deg)}
+.winner-stage[data-effect=lights]{border:2px solid #fb4d96;border-radius:8px;background:linear-gradient(135deg,#210b1e,#55133d);box-shadow:0 0 17px #ef3388bb,0 6px 20px #000b}
+.winner-stage[data-effect=lights] .winner-stage-kicker{color:#ff88c2}
+.winner-stage[data-effect=celebration]{border:2px solid #fff2b8;border-radius:25px;background:linear-gradient(110deg,#8c1e47,#c78137,#8c1e47);box-shadow:0 0 26px #ffbf6acc}
+.winner-stage[data-effect=cinematic]{bottom:3%;border:2px solid #f0d2a1;border-radius:0;padding:12px 22px;background:linear-gradient(130deg,#170b14f5,#682840fa 55%,#170b14f5);box-shadow:0 0 24px #ffce838c,0 10px 30px #000d}
+.winner-stage.is-visible[data-effect=cinematic]{animation:winner-title-entrance 3s cubic-bezier(.21,.78,.27,1) 1 both}
+@keyframes winner-title-entrance{0%,24%{opacity:0;translate:0 24px;scale:.85}40%,55%{opacity:1;translate:0 0;scale:1.07}75%,100%{opacity:1;translate:0 0;scale:1}}
+.winner-stage.is-visible[data-effect=lights]{animation:winner-neon-flicker 2.6s steps(1) 1 both}
+@keyframes winner-neon-flicker{0%,10%,20%{opacity:0}5%,15%,30%,100%{opacity:1}}
+.winner-stage.is-visible[data-effect=celebration]{animation:winner-banner-bounce 1.4s cubic-bezier(.17,1.5,.3,1) 1 both}
+@keyframes winner-banner-bounce{from{translate:0 24px;scale:.6;opacity:0}75%{scale:1.09;opacity:1}to{scale:1;translate:0 0;opacity:1}}
+.winner-stage[data-strength=subtle]{filter:saturate(.72);box-shadow:0 4px 12px #0009}
+.winner-stage[data-strength=show]{filter:saturate(1.18);box-shadow:0 5px 35px #ffc77eaa}
+@media(max-width:540px){.winner-stage{padding:4px 7px 5px;max-width:72%;min-width:90px;bottom:1.5%}.winner-stage-title{font-size:clamp(9px,3vw,15px)}.winner-stage[data-effect=cinematic]{padding:6px 10px}}
 @media(prefers-reduced-motion:reduce){
- .winner-highlight.is-visible .winner-highlight-surface,.winner-highlight.is-visible .winner-stud,.winner-highlight.is-visible .winner-particle{animation:none}
- .winner-highlight .winner-particle{opacity:0}
+ .winner-highlight.is-visible *, .winner-stage.is-visible{animation:none!important;transition:none!important}
+ .winner-fireworks,.winner-firework-wave,.winner-burst-halo,.winner-cinema-rings{display:none}
+ .winner-marquee-bulb:not(.is-target){opacity:.15}
+ .winner-outline-trace{stroke-dashoffset:0!important}
+ .winner-lift-motion{translate:0 0!important}
 }
