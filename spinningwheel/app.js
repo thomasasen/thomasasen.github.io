@@ -536,7 +536,32 @@
   $('winnerEffect').addEventListener('change',ev=>{if(isSpinning)return;config.winnerEffect=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
   $('winnerStrength').addEventListener('change',ev=>{if(isSpinning)return;config.winnerStrength=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
   $('winnerSound').addEventListener('change',ev=>{if(isSpinning)return;config.winnerSound=ev.target.value;save();});
-  $('previewWinnerEffect').addEventListener('click',()=>{if(!isSpinning&&config.segments.length)openPresentation({winnerPreview:true});});
+  // No modal/full-screen transfer: briefly reveal the real wheel, then restore the editor.
+  let previewEffectTimer=0, previewPreviousWinner=null, previewPreviousStatus='';
+  function finishEffectPreview(){
+    if(!previewEffectTimer)return;
+    clearTimeout(previewEffectTimer);
+    previewEffectTimer=0;
+    if(!isSpinning){
+      if(previewPreviousWinner===null)clearWinnerHighlight();
+      else if(previewPreviousWinner!==highlightedWinner)showWinnerHighlight(previewPreviousWinner);
+      $('spinHub').disabled=config.segments.length===0;
+    }
+    $('statusText').textContent=previewPreviousStatus;
+    if(editorPanel.hidden)setEditorOpen(true);
+    $('previewWinnerEffect').focus({preventScroll:true});
+  }
+  function startEffectPreview(){
+    if(isSpinning||!config.segments.length||!presentation.hidden||editorPanel.hidden)return;
+    previewPreviousWinner=highlightedWinner;
+    previewPreviousStatus=$('statusText').textContent;
+    setEditorOpen(false); // removes the drawer AND its blur/dark backdrop
+    $('spinHub').disabled=true; // preview must not accidentally trigger a spin
+    showWinnerHighlight(previewPreviousWinner??currentIndex(rotation,config.segments.length));
+    $('statusText').textContent='Effektvorschau: Das Rad ist vier Sekunden unverdeckt sichtbar.';
+    previewEffectTimer=setTimeout(finishEffectPreview,4000);
+  }
+  $('previewWinnerEffect').addEventListener('click',startEffectPreview);
   $('previewWinnerSound').addEventListener('click',()=>{if(!isSpinning)playWinnerSound(config.winnerSound);});
   $('paletteSelect').addEventListener('change',ev=>{
     if(isSpinning)return;
@@ -569,7 +594,7 @@
   function closeIconPicker(){modal.hidden=true;currentIconTarget=null;lastFocusedElement?.focus?.();}
   $('closeIconModal').addEventListener('click',closeIconPicker);
   modal.addEventListener('click',ev=>{if(ev.target===modal)closeIconPicker();});
-  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(!modal.hidden)closeIconPicker();else if(!presentation.hidden)closePresentation();else if(!editorPanel.hidden)setEditorOpen(false);}});
+  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(!modal.hidden)closeIconPicker();else if(!presentation.hidden)closePresentation();else if(previewEffectTimer)finishEffectPreview();else if(!editorPanel.hidden)setEditorOpen(false);}});
   function iconColumnCount(){return window.matchMedia('(max-width: 520px)').matches?4:5;}
   function paintVisibleIconRows(){
     const grid=$('iconGrid');
