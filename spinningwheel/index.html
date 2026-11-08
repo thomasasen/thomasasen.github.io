@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261108-creative-v3">
+  <link rel="stylesheet" href="styles.css?v=20261108-buttons-v1">
   <script defer src="app.js?v=20261108-creative-v3"></script>
 </head>
 <body>
@@ -95,7 +95,7 @@
                 <option value="show">Show</option>
               </select>
             </div>
-            <button id="previewWinnerEffect" class="btn btn-quiet winner-preview" type="button">✦ Effekt 4 Sekunden vorführen</button>
+            <button id="previewWinnerEffect" class="btn winner-preview winner-preview-effect" type="button"><span class="winner-preview-glyph" aria-hidden="true">✦</span><span class="winner-preview-label">Effekt 4 Sekunden vorführen</span><span class="winner-preview-trailing" aria-hidden="true">›</span></button>
             <div class="winner-control">
               <label for="winnerSound">Gewinner-Sound</label>
               <select id="winnerSound">
@@ -107,7 +107,7 @@
                 <option value="fanfare">Show-Fanfare</option>
               </select>
             </div>
-            <button id="previewWinnerSound" class="btn btn-quiet winner-preview" type="button">♫ Sound anhören</button>
+            <button id="previewWinnerSound" class="btn winner-preview winner-preview-sound" type="button"><span class="winner-preview-glyph" aria-hidden="true">♫</span><span class="winner-preview-label">Sound anhören</span><span class="winner-preview-trailing" aria-hidden="true">›</span></button>
             <p class="winner-setting-note">Soundeffekte werden im Browser erzeugt. Mechanisches Zeigerklicken lässt sich getrennt einstellen.</p>
           </div>
           <div class="setting-row"><label for="soundEnabled">Mechanisches Klickgeräusch</label><label class="toggle"><input type="checkbox" id="soundEnabled" checked><span class="toggle-slider"></span></label></div>
