@@ -126,6 +126,7 @@ body.editor-open{overflow:hidden}
 .winner-highlight.is-visible .winner-marquee-bulb{animation:winner-led-travel 760ms ease-in-out 2}
 @keyframes winner-led-travel{0%,100%{opacity:.2}25%,55%{opacity:1;fill:#ffecc1;filter:drop-shadow(0 0 12px #ff57a2)}75%{opacity:.3}}
 .winner-lights-wedge{fill:transparent;stroke:#ff59a0;stroke-width:3.5;filter:drop-shadow(0 0 9px #f42a82)}
+.winner-celebration-lacquer{fill:#f53a79;fill-opacity:.15;stroke:#ffdd9a;stroke-width:2.5;filter:drop-shadow(0 0 7px #f47ca6)}
 .winner-firework-star,.winner-firework-dot{fill:#ffe8a6;opacity:0;filter:drop-shadow(0 0 6px #ff82bb)}
 .winner-firework-dot:nth-child(3n){fill:#f93e8d}
 .winner-highlight.is-visible .winner-firework-star,.winner-highlight.is-visible .winner-firework-dot{animation:winner-particle-flight 1750ms cubic-bezier(.18,.6,.43,1) 2 both}

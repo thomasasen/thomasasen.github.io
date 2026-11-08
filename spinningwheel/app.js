@@ -319,6 +319,8 @@
       makeMarquee(group,index,n,step,mult);
       e('path',{d:sectorPath(260),class:'winner-lights-wedge'},group);
     }else if(effect==='celebration'){
+      // Keep the winner visually selected once the fireworks have faded.
+      e('path',{d:sectorPath(263),class:'winner-celebration-lacquer'},group);
       makeFireworks(group,center,step,mult);
       const halo=e('circle',{cx:winnerX,cy:winnerY,r:24,class:'winner-burst-halo'},group);
       halo.style.setProperty('--halo-scale',String(2.8*mult));
