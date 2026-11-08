@@ -69,6 +69,42 @@
           <h2>Spiel & Darstellung</h2>
           <div class="setting-row"><label for="spinDuration">Maximale Drehdauer</label><div class="setting-value"><input type="range" id="spinDuration" min="3" max="30" value="6" step="1"><output id="durationLabel" for="spinDuration">6 s</output></div></div>
           <div class="setting-row setting-row-coast"><div class="setting-descriptor"><label for="coastIntensity">Auslaufspannung</label><small>Höher = das Rad schleicht länger über die letzten Felder.</small></div><div class="setting-value"><input type="range" id="coastIntensity" min="0" max="100" value="65" step="5" aria-describedby="coastHint"><output id="coastLabel" for="coastIntensity">65 %</output></div></div><p class="setting-help" id="coastHint">0 %: bremst früh · 100 %: bleibt bis kurz vor Schluss in Bewegung.</p>
+          <div class="winner-settings" aria-labelledby="winnerSettingsTitle">
+            <h3 id="winnerSettingsTitle">Gewinnerinszenierung</h3>
+            <div class="winner-control">
+              <label for="winnerEffect">Hervorhebungsstil</label>
+              <select id="winnerEffect">
+                <option value="outline">Golden Edge · Goldkontur</option>
+                <option value="spotlight">Casino Spotlight · Lichtfokus</option>
+                <option value="lift">Golden Lift · 3D-Anhebung</option>
+                <option value="lights">Jackpot Lights · Lauflicht</option>
+                <option value="celebration">Golden Celebration · Partikel</option>
+                <option value="cinematic">Casino Cinematic · Kombiniert</option>
+              </select>
+            </div>
+            <div class="winner-control">
+              <label for="winnerStrength">Effektstärke</label>
+              <select id="winnerStrength">
+                <option value="subtle">Dezent</option>
+                <option value="refined">Edel</option>
+                <option value="show">Show</option>
+              </select>
+            </div>
+            <button id="previewWinnerEffect" class="btn btn-quiet winner-preview" type="button">✦ Effekt vorführen</button>
+            <div class="winner-control">
+              <label for="winnerSound">Gewinner-Sound</label>
+              <select id="winnerSound">
+                <option value="off">Keiner</option>
+                <option value="soft">Sanfter Ton</option>
+                <option value="bell">Casino-Glocke</option>
+                <option value="chime">Goldener Dreiklang</option>
+                <option value="jackpot">Jackpot</option>
+                <option value="fanfare">Show-Fanfare</option>
+              </select>
+            </div>
+            <button id="previewWinnerSound" class="btn btn-quiet winner-preview" type="button">♫ Sound anhören</button>
+            <p class="winner-setting-note">Soundeffekte werden im Browser erzeugt. Mechanisches Zeigerklicken lässt sich getrennt einstellen.</p>
+          </div>
           <div class="setting-row"><label for="soundEnabled">Mechanisches Klickgeräusch</label><label class="toggle"><input type="checkbox" id="soundEnabled" checked><span class="toggle-slider"></span></label></div>
           <div class="setting-row"><label for="paletteSelect">Farbwelt</label><select id="paletteSelect"><option value="noir">Casino Noir</option><option value="ruby">Royal Rouge</option><option value="emerald">Emerald Lounge</option><option value="midnight">Midnight Gold</option></select></div>
         </div>

@@ -5,6 +5,9 @@
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const TWO_PI = Math.PI * 2;
   const $ = (id) => document.getElementById(id);
+  const WINNER_EFFECTS = ['outline','spotlight','lift','lights','celebration','cinematic'];
+  const WINNER_STRENGTHS = ['subtle','refined','show'];
+  const WINNER_SOUNDS = ['off','soft','bell','chime','jackpot','fanfare'];
   const PALETTES = {
     noir: ['#981439', '#181318'],
     ruby: ['#b7193d', '#2b1319'],
@@ -161,7 +164,7 @@
     ];
     return data.map((v,i) => ({ id:makeId(), label:v[0], icon:v[1], showLabel:v[2], showIcon:v[3], color:PALETTES.noir[i%2] }));
   }
-  function defaultConfig() { return {version:1, segments:initialSegments(), duration:6, coast:65, sound:true, palette:'noir'}; }
+  function defaultConfig() { return {version:1, segments:initialSegments(), duration:6, coast:65, sound:true, winnerEffect:'cinematic', winnerStrength:'refined', winnerSound:'chime', palette:'noir'}; }
   function validColor(v) { return /^#[0-9a-f]{6}$/i.test(v || ''); }
   function validIcon(v) { return isValidMaterialSymbolName(v); }
   function saneConfig(raw) {
@@ -173,6 +176,9 @@
       duration: Number.isFinite(Number(raw.duration)) ? Math.min(30,Math.max(3,Math.round(Number(raw.duration)))) : 6,
       coast: Number.isFinite(Number(raw.coast)) ? Math.min(100,Math.max(0,Math.round(Number(raw.coast)))) : 65,
       sound:raw.sound !== false,
+      winnerEffect: WINNER_EFFECTS.includes(raw.winnerEffect) ? raw.winnerEffect : 'cinematic',
+      winnerStrength: WINNER_STRENGTHS.includes(raw.winnerStrength) ? raw.winnerStrength : 'refined',
+      winnerSound: WINNER_SOUNDS.includes(raw.winnerSound) ? raw.winnerSound : 'chime',
       segments:raw.segments.map((s,i) => ({
         id:makeId(), label: String(s?.label ?? '').slice(0,80),
         icon:validIcon(normalizeIconName(s?.icon)) ? normalizeIconName(s.icon) : 'star',
@@ -258,20 +264,86 @@
     const group=$('winnerHighlight');
     if(group){group.classList.remove('is-visible');group.replaceChildren();}
   }
+  // All winner geometry lives inside the rotating SVG group, so it remains
+  // registered to the actual winning wedge at any sector count or stop angle.
   function showWinnerHighlight(index){
     const group=$('winnerHighlight'),n=config.segments.length;
     if(!group||!Number.isInteger(index)||index<0||index>=n)return;
     highlightedWinner=index;
-    group.replaceChildren();
-    const step=360/n,center=-90+index*step;
-    if(n===1){
-      e('circle',{cx:320,cy:320,r:264,class:'winner-highlight-surface','stroke-width':4},group);
-    }else{
-      e('path',{d:wedgePath(center-step/2,center+step/2,264),class:'winner-highlight-surface','stroke-width':n>80?1.2:n>24?2:4},group);
-    }
-    // A gold spotlight moves together with the stopped wedge; the central
-    // start button and the stationary pointer remain separate.
     group.classList.remove('is-visible');
+    group.replaceChildren();
+    const step=360/n, center=-90+index*step;
+    const effect=config.winnerEffect, strength=config.winnerStrength;
+    const multiplier={subtle:.65,refined:1,show:1.35}[strength];
+    group.dataset.effect=effect;
+    group.dataset.strength=strength;
+    group.style.setProperty('--winner-dim',String(({subtle:.22,refined:.39,show:.57})[strength]));
+    group.style.setProperty('--winner-fill',String(({subtle:.11,refined:.19,show:.3})[strength]));
+    group.style.setProperty('--winner-stroke',String(2.5*multiplier));
+    const sectorPath=(r)=>n===1?null:wedgePath(center-step/2,center+step/2,r);
+    // Other sectors are dimmed without putting a dark shape over the winning
+    // sector or hiding its label. Only the disk, not the golden rim, is shaded.
+    if(effect==='spotlight'||effect==='cinematic'){
+      const shade=e('g',{class:'winner-shade','clip-path':'url(#faceClip)'},group);
+      if(n>100){
+        // For very dense wheels, one even-odd path replaces thousands of
+        // individual shadow wedges and cuts out the selected sector exactly.
+        const disk='M585 320 A265 265 0 1 0 55 320 A265 265 0 1 0 585 320 Z';
+        e('path',{d:disk+' '+sectorPath(265),class:'winner-shade-sector','fill-rule':'evenodd'},shade);
+      }else{
+        for(let j=0;j<n;j++){
+          if(j===index)continue;
+          const mid=-90+j*step;
+          if(n===1)continue;
+          e('path',{d:wedgePath(mid-step/2,mid+step/2,265),class:'winner-shade-sector'},shade);
+        }
+      }
+    }
+    // Lift duplicates the exact wedge and its SVG label/icon within an offset
+    // group, preventing an artificial highlight border detached from the text.
+    if(effect==='lift'){
+      const offset=7*multiplier,rad=center*Math.PI/180;
+      const [dx,dy]=[Math.cos(rad)*offset,Math.sin(rad)*offset];
+      const lift=e('g',{class:'winner-lift',transform:`translate(${dx.toFixed(3)} ${dy.toFixed(3)})`},group);
+      if(n===1)e('circle',{cx:320,cy:320,r:258,fill:config.segments[index].color,class:'winner-lift-face'},lift);
+      else e('path',{d:sectorPath(258),fill:config.segments[index].color,class:'winner-lift-face'},lift);
+      const original=wheel.querySelector(`[data-wheel-item="${index}"]`);
+      if(original)lift.appendChild(original.cloneNode(true));
+    }
+    // Always retain a clear selection, even after animated effects finish.
+    if(n===1)e('circle',{cx:320,cy:320,r:264,class:'winner-highlight-surface'},group);
+    else e('path',{d:sectorPath(264),class:'winner-highlight-surface','stroke-width':n>80?1:n>24?1.7:2.5*multiplier},group);
+    if(effect==='lights'||effect==='cinematic'){
+      const studs=e('g',{class:'winner-studs'},group);
+      const count=56;
+      const distance=(a,b)=>Math.abs((((a-b)%360)+540)%360-180);
+      let selected=[];
+      for(let j=0;j<count;j++){
+        const angle=j*360/count-90;
+        if(n===1||distance(angle,center)<=step/2+0.2)selected.push(j);
+      }
+      // Very narrow sectors still get a luminous stud at their center.
+      if(!selected.length)selected=[Math.round(((center+90)/360)*count)%count];
+      selected.forEach((j,k)=>{
+        const [x,y]=polar(291,j*360/count-90);
+        const bulb=e('circle',{cx:x,cy:y,r:5.4*multiplier,class:'winner-stud'},studs);
+        bulb.style.animationDelay=`${Math.min(k,20)*70}ms`;
+      });
+    }
+    if(effect==='celebration'){
+      const glitters=e('g',{class:'winner-particles'},group),amount=Math.round(16*multiplier);
+      const arc=Math.min(45,Math.max(7,step*.43));
+      for(let i=0;i<amount;i++){
+        const phi=center+((i/Math.max(1,amount-1))-.5)*arc*2;
+        const [x,y]=polar(230+(i%5)*8,phi);
+        const particle=e('path',{d:'M0 -5 L1.5 -1.5 L5 0 L1.5 1.5 L0 5 L-1.5 1.5 L-5 0 L-1.5 -1.5Z',transform:`translate(${x.toFixed(2)} ${y.toFixed(2)})`,class:'winner-particle'},glitters);
+        const offset=phi*Math.PI/180;
+        particle.style.setProperty('--spark-x',`${(Math.cos(offset)*(13+i%6*5)).toFixed(2)}px`);
+        particle.style.setProperty('--spark-y',`${(Math.sin(offset)*(13+i%6*5)).toFixed(2)}px`);
+        particle.style.animationDelay=`${i%6*95}ms`;
+      }
+    }
+    // Reading and clicking stays possible: all overlays ignore pointer events.
     void group.getBoundingClientRect();
     group.classList.add('is-visible');
   }
@@ -316,7 +388,7 @@
           const [x,y]=polar(220,center);
           // Beschriftungen folgen der Segmentachse. Sobald das Segment unter
           // dem Zeiger bei 12 Uhr steht, erscheint die Nummer aufrecht.
-          const labelGroup=e('g',{transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${(i*step).toFixed(5)})`},wheel);
+          const labelGroup=e('g',{'data-wheel-item':i,transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${(i*step).toFixed(5)})`},wheel);
           const t=e('text',{x:0,y:0,'text-anchor':'middle','dominant-baseline':'central',class:'face-number','font-size':n>52?8:n>36?10:12},labelGroup);
           t.textContent=String(i+1);return;
         }
@@ -333,7 +405,7 @@
         // aufrecht. Eine 180°-Korrektur auf der unteren Radhälfte würde sie
         // nach dem Drehen kopfüber erscheinen lassen.
         const tilt=i*step;
-        const content=e('g',{transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${tilt.toFixed(5)})`},wheel);
+        const content=e('g',{'data-wheel-item':i,transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${tilt.toFixed(5)})`},wheel);
         const title=e('title',{},content);title.textContent=safeText(s.label);
         const both=s.showLabel&&s.showIcon;
         const iconSize=n<=8?43:n<=12?31:22;
@@ -394,7 +466,7 @@
     </div>`).join('');
     if(isSpinning) lockEditor(true);
   }
-  function renderSettings(){ $('spinDuration').value=config.duration; $('durationLabel').textContent=config.duration+' s'; $('coastIntensity').value=config.coast; $('coastLabel').textContent=config.coast+' %'; $('soundEnabled').checked=config.sound; $('paletteSelect').value=config.palette; }
+  function renderSettings(){ $('spinDuration').value=config.duration; $('durationLabel').textContent=config.duration+' s'; $('coastIntensity').value=config.coast; $('coastLabel').textContent=config.coast+' %'; $('soundEnabled').checked=config.sound; $('winnerEffect').value=config.winnerEffect; $('winnerStrength').value=config.winnerStrength; $('winnerSound').value=config.winnerSound; $('paletteSelect').value=config.palette; }
   function render(){drawWheel();renderSegments();renderSettings();}
   function save(){
     try {localStorage.setItem(STORAGE_KEY,JSON.stringify(config));saveOk=true;$('saveIndicator').textContent='● Lokal gespeichert';$('saveIndicator').style.color='';}
@@ -407,6 +479,7 @@
     $('spinDuration').disabled=locked;
     $('coastIntensity').disabled=locked;
     $('soundEnabled').disabled=locked;
+    for(const id of ['winnerEffect','winnerStrength','winnerSound','previewWinnerEffect','previewWinnerSound'])$(id).disabled=locked;
     $('paletteSelect').disabled=locked;
     $('importJson').disabled=locked;
     $('resetConfig').disabled=locked;
@@ -460,6 +533,11 @@
   $('spinDuration').addEventListener('input',ev=>{config.duration=Number(ev.target.value);$('durationLabel').textContent=config.duration+' s';save();});
   $('coastIntensity').addEventListener('input',ev=>{config.coast=Number(ev.target.value);$('coastLabel').textContent=config.coast+' %';save();});
   $('soundEnabled').addEventListener('change',ev=>{config.sound=ev.target.checked;save();});
+  $('winnerEffect').addEventListener('change',ev=>{if(isSpinning)return;config.winnerEffect=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
+  $('winnerStrength').addEventListener('change',ev=>{if(isSpinning)return;config.winnerStrength=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
+  $('winnerSound').addEventListener('change',ev=>{if(isSpinning)return;config.winnerSound=ev.target.value;save();});
+  $('previewWinnerEffect').addEventListener('click',()=>{if(!isSpinning&&config.segments.length)showWinnerHighlight(highlightedWinner??0);});
+  $('previewWinnerSound').addEventListener('click',()=>{if(!isSpinning)playWinnerSound(config.winnerSound);});
   $('paletteSelect').addEventListener('change',ev=>{
     if(isSpinning)return;
     config.palette=ev.target.value;
@@ -471,7 +549,7 @@
     config=defaultConfig();rotation=0;clearWinnerHighlight();render();save();$('statusText').textContent='Auf die goldene Mitte klicken, um zu drehen';toast('Ausgangskonfiguration wiederhergestellt.');
   });
   $('exportJson').addEventListener('click',()=>{
-    const data={version:1,segments:config.segments.map(({id,...rest})=>rest),duration:config.duration,coast:config.coast,sound:config.sound,palette:config.palette};
+    const data={version:1,segments:config.segments.map(({id,...rest})=>rest),duration:config.duration,coast:config.coast,sound:config.sound,winnerEffect:config.winnerEffect,winnerStrength:config.winnerStrength,winnerSound:config.winnerSound,palette:config.palette};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='casino-noir-konfiguration.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
     toast('Konfiguration als JSON exportiert.');
@@ -571,6 +649,41 @@
   $('showOnlyWheel').addEventListener('click',openPresentation);
   $('closePresentation').addEventListener('click',closePresentation);
   function rand(){if(globalThis.crypto?.getRandomValues){const buf=new Uint32Array(1);crypto.getRandomValues(buf);return buf[0]/4294967296;}return Math.random();}
+  function ensureAudioContext(){
+    try{
+      const Ctx=window.AudioContext||window.webkitAudioContext;
+      if(!Ctx)return null;
+      if(!audioContext)audioContext=new Ctx();
+      if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
+      return audioContext;
+    }catch{return null;}
+  }
+  function playWinnerSound(mode){
+    if(mode==='off')return;
+    const ctx=ensureAudioContext();if(!ctx||ctx.state==='closed')return;
+    // Original Web Audio motifs: no external recordings or licensed audio.
+    const patterns={
+      soft:[[0,523,.34]],
+      bell:[[0,659,.7],[.13,988,.6]],
+      chime:[[0,523,.23],[.18,659,.23],[.36,784,.55]],
+      jackpot:[[0,392,.12],[.13,494,.12],[.26,587,.13],[.4,784,.13],[.55,988,.42],[.69,1175,.58]],
+      fanfare:[[0,392,.18],[.20,523,.18],[.40,659,.18],[.62,784,.42],[.85,659,.15],[1.03,1047,.65]]
+    };
+    const sequence=patterns[mode];if(!sequence)return;
+    for(const [offset,freq,length] of sequence){
+      try{
+        const now=ctx.currentTime+offset,osc=ctx.createOscillator(),gain=ctx.createGain();
+        osc.type=mode==='fanfare'?'triangle':mode==='soft'?'sine':'sine';
+        osc.frequency.setValueAtTime(freq,now);
+        if(mode==='jackpot')osc.frequency.linearRampToValueAtTime(freq*1.018,now+Math.min(length,.12));
+        gain.gain.setValueAtTime(.0001,now);
+        gain.gain.exponentialRampToValueAtTime(mode==='soft'?.036:.054,now+.022);
+        gain.gain.exponentialRampToValueAtTime(.0001,now+length);
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.start(now);osc.stop(now+length+.03);
+      }catch{/* Audio output is optional; visual result must never fail. */}
+    }
+  }
   function normalized(angle){return ((angle%360)+360)%360;}
   function tick(){
     if(!config.sound)return;
@@ -622,7 +735,7 @@
     clearWinnerHighlight();
     const power=powerAt(performance.now());
     displayPower(power); // Capture at the actual click, not at the previous frame.
-    isSpinning=true;powerMeter.classList.add('is-locked');
+    isSpinning=true;if(config.winnerSound!=='off'||config.sound)ensureAudioContext();powerMeter.classList.add('is-locked');
     lockEditor(true);$('spinHub').disabled=true;$('spinHub').classList.add('is-spinning');
     const percent=Math.round(power*100);
     $('statusText').textContent=`Drehkraft ${percent} % · Das Rad dreht sich …`;
@@ -652,7 +765,7 @@
       rotation=finish;wheel.style.transform=`rotate(${rotation}deg)`;
       isSpinning=false;powerMeter.classList.remove('is-locked');powerEpoch=performance.now()-310;
       lockEditor(false);$('spinHub').disabled=false;$('spinHub').classList.remove('is-spinning');
-      showWinnerHighlight(winner);
+      showWinnerHighlight(winner);playWinnerSound(config.winnerSound);
       const selected=config.segments[winner],result=safeText(selected.label);
       $('statusText').textContent=`Ergebnis: ${result} · Feld ${winner+1} von ${n}`;
       $('presentationResult').textContent=`✦ ${result} ✦`;
@@ -663,7 +776,7 @@
     raf=requestAnimationFrame(frame);
   }
   $('spinHub').addEventListener('click',spin);
-  window.__casinoNoirDebug={get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
+  window.__casinoNoirDebug={get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
   restoreIconCatalog();
   render();
   loadIconCatalog();

@@ -92,3 +92,32 @@ body.editor-open{overflow:hidden}
 @keyframes winner-gold-pulse{0%,100%{opacity:.85}50%{opacity:1;filter:drop-shadow(0 0 11px #ffcf77bb)}}
 @media(prefers-reduced-motion:reduce){.winner-highlight.is-visible{animation:none}}
 @media(max-width:520px){.setting-row-coast{gap:6px}.setting-descriptor{max-width:170px}.setting-value input[type=range]{width:105px}}
+
+
+/* Casino Noir: configurable winner effects, always following real sector geometry. */
+.winner-settings{margin:15px 0 7px;padding:16px 13px;border:1px solid #755040;border-radius:11px;background:linear-gradient(140deg,#302027,#20151d)}
+.editor-settings .winner-settings h3{margin:0 0 14px;font:normal 19px Georgia,serif;color:#f6d9ac}
+.winner-control{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.winner-control label{font-size:12px;color:#e8cbbb;font-weight:650}
+.winner-control select{width:100%;max-width:100%;background:#1a1218;color:#f9e4c9;border:1px solid #785044;border-radius:7px;padding:10px 12px;font:12px system-ui,sans-serif}
+.winner-preview{width:100%;margin:3px 0 9px;border-color:#926e53;color:#f8d9a9}
+.winner-setting-note{font-size:11px;line-height:1.55;color:#c2a5a1;margin:8px 0 0}
+.winner-highlight{opacity:0;pointer-events:none;--winner-fill:.19;--winner-dim:.39;--winner-stroke:2.5px}
+.winner-highlight.is-visible{opacity:1;animation:none}
+.winner-highlight-surface{fill:#ffe1a0;fill-opacity:var(--winner-fill);stroke:#ffebaa;stroke-width:var(--winner-stroke);stroke-linejoin:round;filter:drop-shadow(0 0 5px #ffc877)}
+.winner-highlight.is-visible .winner-highlight-surface{animation:winner-edge-glow 1.25s ease-in-out 2}
+.winner-shade-sector{fill:#050306;fill-opacity:var(--winner-dim)}
+.winner-shade{pointer-events:none}
+.winner-lift{filter:drop-shadow(0 3px 5px #000d)}
+.winner-lift-face{stroke:#ffe6aa;stroke-width:2.7px;stroke-linejoin:round}
+.winner-stud{fill:#fff0b0;stroke:#ffcf66;stroke-width:2px;filter:drop-shadow(0 0 5px #ffda7f)}
+.winner-highlight.is-visible .winner-stud{animation:winner-bulb 660ms ease-in-out 3 both}
+.winner-particle{fill:#ffe7a3;filter:drop-shadow(0 0 3px #ffd177);opacity:0}
+.winner-highlight.is-visible .winner-particle{animation:winner-sparkle 1.5s ease-out 2 both}
+@keyframes winner-edge-glow{0%,100%{stroke:#ffe5a0;filter:drop-shadow(0 0 4px #e6a348)}50%{stroke:#fffce5;filter:drop-shadow(0 0 12px #ffd887)}}
+@keyframes winner-bulb{0%,100%{opacity:.7;filter:drop-shadow(0 0 3px #fcca71)}50%{opacity:1;filter:drop-shadow(0 0 11px #ffedac)}}
+@keyframes winner-sparkle{0%{opacity:0;translate:0 0;scale:.3}18%{opacity:1;scale:1}75%{opacity:1}100%{opacity:0;translate:var(--spark-x) var(--spark-y);scale:.3}}
+@media(prefers-reduced-motion:reduce){
+ .winner-highlight.is-visible .winner-highlight-surface,.winner-highlight.is-visible .winner-stud,.winner-highlight.is-visible .winner-particle{animation:none}
+ .winner-highlight .winner-particle{opacity:0}
+}
