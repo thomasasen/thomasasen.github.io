@@ -519,7 +519,7 @@
     if(!config.segments.length){list.innerHTML='<div class="stage-notice">Noch keine Segmente. Mit „Hinzufügen“ beginnt dein neues Rad.</div>';return;}
     list.innerHTML=config.segments.map((s,i)=>`<div class="segment-card" data-id="${escapeHtml(s.id)}">
       <div class="segment-top">
-        <span class="segment-index" title="Segment ${i+1}">${String(i+1).padStart(2,'0')}</span>
+        <button type="button" class="segment-drag-handle" data-action="drag" aria-label="Segment ${i+1} verschieben: ziehen oder Pfeiltasten verwenden" title="Ziehen zum Sortieren · Pfeiltasten, Pos1 oder Ende" ${isSpinning?'disabled':''}><span class="drag-grip" aria-hidden="true">⠿</span><span class="drag-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span></button>
         <label class="segment-color" title="Segmentfarbe wählen"><input type="color" data-field="color" value="${escapeHtml(s.color)}" aria-label="Farbe für Segment ${i+1}"></label>
         <input class="segment-label" type="text" data-field="label" aria-label="Beschriftung für Segment ${i+1}" placeholder="Beschriftung …" maxlength="80" value="${escapeHtml(s.label)}" ${!s.showLabel?'disabled':''}>
         <button class="segment-icon-btn" type="button" data-action="icon" aria-label="Symbol für Segment ${i+1} auswählen" title="Material-Symbol auswählen">${materialIconMarkup(s.icon)}</button>
@@ -587,12 +587,106 @@
     const card=btn.closest('.segment-card');const idx=config.segments.findIndex(x=>x.id===card?.dataset.id);
     if(idx<0)return;
     const action=btn.dataset.action;
+    if(action==='drag')return; // Pointer/keyboard handlers own the reorder grip.
     if(action==='icon'){openIconPicker(card.dataset.id);return;}
     if(action==='delete'){config.segments.splice(idx,1);}
     else if(action==='duplicate'){const clone={...config.segments[idx],id:makeId()};config.segments.splice(idx+1,0,clone);}
     else if(action==='up'&&idx>0){[config.segments[idx],config.segments[idx-1]]=[config.segments[idx-1],config.segments[idx]];}
     else if(action==='down'&&idx<config.segments.length-1){[config.segments[idx],config.segments[idx+1]]=[config.segments[idx+1],config.segments[idx]];}
     renderSegments();mutate();
+  });
+  // Accessible drag-and-drop: pointer events work with mouse, pen and touch.
+  // Data is reordered only after dropping, never while dragging over another card.
+  function moveSegment(from,to,{focus=false}={}){
+    if(isSpinning||from===to||from<0||to<0||from>=config.segments.length||to>=config.segments.length)return false;
+    const [segment]=config.segments.splice(from,1);
+    config.segments.splice(to,0,segment);
+    renderSegments();mutate(); // Keeps SVG, saved config and wheel sectors in sync.
+    if(focus){
+      const card=[...list.querySelectorAll('.segment-card')].find(el=>el.dataset.id===segment.id);
+      card?.querySelector('.segment-drag-handle')?.focus({preventScroll:true});
+    }
+    return true;
+  }
+  let dragState=null,dragScrollRaf=0;
+  function clearDragMarks(){
+    list.querySelectorAll('.segment-card').forEach(el=>el.classList.remove('is-dragging','drop-before','drop-after'));
+  }
+  function dragDestination(clientY){
+    const cards=[...list.querySelectorAll('.segment-card')].filter(c=>c.dataset.id!==dragState?.id);
+    const dest=cards.findIndex(c=>clientY<c.getBoundingClientRect().top+c.getBoundingClientRect().height/2);
+    return dest===-1?cards.length:dest;
+  }
+  function showDropDestination(dest){
+    clearDragMarks();
+    const source=list.querySelector('.segment-card[data-id="'+dragState.id+'"]');
+    source?.classList.add('is-dragging');
+    const others=[...list.querySelectorAll('.segment-card')].filter(c=>c!==source);
+    if(dest<others.length)others[dest].classList.add('drop-before');
+    else others.at(-1)?.classList.add('drop-after');
+  }
+  function scrollWhileDragging(){
+    dragScrollRaf=0;
+    if(!dragState?.active)return;
+    const rect=editorPanel.getBoundingClientRect();
+    const pos=dragState.clientY;
+    const edge=70;
+    const velocity=pos>rect.bottom-edge?Math.min(21,4+(pos-(rect.bottom-edge))*.25):
+      pos<rect.top+edge?-Math.min(21,4+((rect.top+edge)-pos)*.25):0;
+    if(velocity)editorPanel.scrollTop+=velocity;
+    const dest=dragDestination(pos);
+    dragState.dest=dest;
+    showDropDestination(dest);
+    dragScrollRaf=requestAnimationFrame(scrollWhileDragging);
+  }
+  function stopDrag({commit=false}={}){
+    const prior=dragState;
+    if(!prior)return;
+    dragState=null;
+    cancelAnimationFrame(dragScrollRaf);
+    dragScrollRaf=0;
+    clearDragMarks();
+    document.body.classList.remove('is-segment-dragging');
+    try{if(prior.handle.hasPointerCapture(prior.pointerId))prior.handle.releasePointerCapture(prior.pointerId)}catch{}
+    if(commit&&prior.active&&!isSpinning){
+      const from=config.segments.findIndex(x=>x.id===prior.id);
+      if(moveSegment(from,prior.dest,{focus:true}))toast('Segmentreihenfolge aktualisiert.');
+    }
+  }
+  list.addEventListener('pointerdown',event=>{
+    const grip=event.target.closest('.segment-drag-handle');
+    if(!grip||grip.disabled||isSpinning||event.button!==0||dragState)return;
+    const card=grip.closest('.segment-card');
+    if(!card)return;
+    dragState={pointerId:event.pointerId,id:card.dataset.id,handle:grip,startY:event.clientY,clientY:event.clientY,active:false,dest:config.segments.findIndex(s=>s.id===card.dataset.id)};
+    try{grip.setPointerCapture(event.pointerId)}catch{}
+    if(event.pointerType!=='mouse')event.preventDefault();
+  });
+  list.addEventListener('pointermove',event=>{
+    if(!dragState||event.pointerId!==dragState.pointerId)return;
+    dragState.clientY=event.clientY;
+    if(!dragState.active){
+      if(Math.abs(event.clientY-dragState.startY)<5)return;
+      dragState.active=true;
+      document.body.classList.add('is-segment-dragging');
+      scrollWhileDragging();
+    }
+    event.preventDefault();
+    dragState.dest=dragDestination(event.clientY);
+    showDropDestination(dragState.dest);
+  });
+  list.addEventListener('pointerup',event=>{if(dragState?.pointerId===event.pointerId)stopDrag({commit:true});});
+  list.addEventListener('pointercancel',event=>{if(dragState?.pointerId===event.pointerId)stopDrag();});
+  list.addEventListener('lostpointercapture',()=>{if(dragState)stopDrag();});
+  list.addEventListener('keydown',event=>{
+    const grip=event.target.closest('.segment-drag-handle');
+    if(!grip||isSpinning)return;
+    const from=config.segments.findIndex(s=>s.id===grip.closest('.segment-card')?.dataset.id);
+    if(from<0)return;
+    const to=event.key==='ArrowUp'?Math.max(0,from-1):event.key==='ArrowDown'?Math.min(config.segments.length-1,from+1):event.key==='Home'?0:event.key==='End'?config.segments.length-1:null;
+    if(to===null)return;
+    event.preventDefault();
+    if(moveSegment(from,to,{focus:true}))toast('Segmentreihenfolge aktualisiert.');
   });
   $('addSegment').addEventListener('click',()=>{
     if(isSpinning)return;

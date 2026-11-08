@@ -242,3 +242,18 @@ body.editor-open{overflow:hidden}
   .winner-control select{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.winner-preview,.winner-control select{transition:none}}
+
+/* Segment reordering: a dedicated gold-accented grip avoids dragging inputs. */
+.segment-top{grid-template-columns:38px 32px minmax(60px,1fr) 41px 30px}
+.segment-drag-handle{width:38px;min-height:41px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:2px;border-radius:7px;border:1px solid #62434a;background:linear-gradient(160deg,#3d2930,#241820);color:#e8c28c;cursor:grab;touch-action:none;user-select:none}
+.segment-drag-handle .drag-grip{font-size:21px;line-height:1;letter-spacing:0}
+.segment-drag-handle .drag-number{font:700 9px/1 system-ui,sans-serif;color:#bf9c9a;font-variant-numeric:tabular-nums}
+.segment-drag-handle:hover,.segment-drag-handle:focus-visible{border-color:#e8bc79;background:linear-gradient(160deg,#614031,#352127);color:#ffe8ba}
+.segment-drag-handle:active,.is-segment-dragging .segment-drag-handle{cursor:grabbing}
+.segment-drag-handle:disabled{opacity:.35;cursor:not-allowed}
+.segment-card.is-dragging{opacity:.53;border-color:#e6b477;background:#442c2b}
+.segment-card.drop-before,.segment-card.drop-after{position:relative}
+.segment-card.drop-before::before,.segment-card.drop-after::after{content:"";position:absolute;left:3px;right:3px;height:3px;border-radius:8px;background:#f5cf87;box-shadow:0 0 9px #eeb168,0 0 0 1px #3c1d10;z-index:2;pointer-events:none}
+.segment-card.drop-before::before{top:-7px}
+.segment-card.drop-after::after{bottom:-7px}
+@media(max-width:520px){.segment-top{grid-template-columns:36px 29px minmax(30px,1fr) 36px 22px;gap:6px}.segment-drag-handle{width:36px;min-height:43px}}
