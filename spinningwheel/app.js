@@ -66,6 +66,62 @@
     casino:'casino spiel glücksspiel würfel', star:'stern star favoriten',
     redeem:'geschenk gift present', local_bar:'cocktail drink getränk bar'
   };
+  // Search-tag snapshot from the official Material Symbols metadata.
+  // Bundled locally for predictable GitHub Pages and offline standalone use.
+  const ICON_SEARCH_INDEX_URL='icon-search-index.json?v=20261109-semantic-v1';
+  const SEARCH_SPELLING={laundrey:'laundry',tshirt:'shirt','t shirt':'shirt',tshirts:'shirt'};
+  let ICON_SEARCH_TAGS=new Map(),iconSearchReady=false,iconSearchRequest=null,iconSearchError='';
+  function installIconSearchIndex(data){
+    if(!data||data.version!==1||!Array.isArray(data.icons)||data.icons.length<3800)throw Error('Ungültiger Schlagwortindex');
+    const parsed=new Map();
+    for(const entry of data.icons){
+      if(!Array.isArray(entry)||!isValidMaterialSymbolName(entry[0])||typeof entry[2]!=='string')continue;
+      const tags=entry[2].split('|').map(normalizeSearchText).filter(Boolean);
+      parsed.set(entry[0],{tags,all:tags.join(' '),popularity:Number(entry[1])||100000,categories:String(entry[3]||'')});
+    }
+    if(parsed.size<3800)throw Error('Schlagwortindex unvollständig');
+    ICON_SEARCH_TAGS=parsed;
+    iconSearchReady=true;
+    iconSearchError='';
+    if(!$('iconModal').hidden)renderIconPicker();
+  }
+  async function loadIconSearchMetadata(force=false){
+    if(iconSearchRequest)return iconSearchRequest;
+    if(iconSearchReady&&!force)return;
+    iconSearchError='';
+    iconSearchRequest=(async()=>{
+      try{
+        const inline=$('iconSearchIndexData');
+        const json=inline?inline.textContent:await fetchCatalogText(ICON_SEARCH_INDEX_URL);
+        installIconSearchIndex(JSON.parse(json));
+      }catch(error){
+        iconSearchError='Schlagwortindex nicht verfügbar';
+        console.warn('Material Symbols Such-Tags nicht geladen:',error);
+      }
+    })();
+    try{await iconSearchRequest;}finally{iconSearchRequest=null;if(!$('iconModal').hidden)renderIconPicker();}
+  }
+  function iconSearchScore(name,query){
+    if(!query)return 1;
+    const normalized=normalizeSearchText(name);
+    const meta=ICON_SEARCH_TAGS.get(name);
+    const tags=meta?.tags||[];
+    const aliases=normalizeSearchText(SEARCH_SYNONYMS[name]);
+    let score=0;
+    if(normalized===query)score=1000;
+    else if(normalized.startsWith(query))score=920;
+    else if(normalized.includes(query))score=800;
+    if(tags.includes(query))score=Math.max(score,880);
+    else if(tags.some(tag=>tag.startsWith(query)))score=Math.max(score,660);
+    else if(tags.some(tag=>tag.includes(query)))score=Math.max(score,460);
+    if(aliases.includes(query))score=Math.max(score,350);
+    // Multiword searches should match the combined searchable vocabulary.
+    if(!score&&query.includes(' ')){
+      const parts=query.split(' ').filter(Boolean);
+      if(parts.every(part=>(normalized+' '+(meta?.all||'')+' '+aliases).includes(part)))score=260;
+    }
+    return score;
+  }
   const DIRECT_ALIASES = {
     shirt:'apparel',tshirt:'apparel',t_shirt:'apparel',t_shirts:'apparel',
     kleidung:'apparel',hemd:'apparel',oberteil:'apparel',pullover:'apparel',
@@ -836,6 +892,7 @@
     currentIconTarget=id;lastFocusedElement=document.activeElement;
     modal.hidden=false;activeCategory='Alle';$('iconSearch').value='';$('customIconName').value='';renderIconPicker();$('iconSearch').focus();
     if(!fullCatalogReady) loadIconCatalog();
+    if(!iconSearchReady)loadIconSearchMetadata();
   }
   function closeIconPicker(){modal.hidden=true;currentIconTarget=null;lastFocusedElement?.focus?.();}
   $('closeIconModal').addEventListener('click',closeIconPicker);
@@ -846,7 +903,7 @@
     const grid=$('iconGrid');
     const names=iconMatches;
     if(!names.length){
-      grid.innerHTML='<div class="stage-notice" role="status">Keine passenden Symbole gefunden. Die Suche verwendet die englischen Google-Symbolnamen, z. B. diamond, favorite oder castle.</div>';
+      grid.innerHTML='<div class="stage-notice" role="status">Keine passenden Symbole gefunden. Suche nach Symbolnamen, englischen Schlagwörtern oder deutschen Begriffen.</div>';
       return;
     }
     const cols=iconColumnCount(), pitch=ICON_ROW_HEIGHT+ICON_ROW_GAP;
@@ -877,10 +934,20 @@
       status.textContent=`Katalog wird vorbereitet … ${FEATURED_ICONS.length} Favoriten sind verfügbar.`;
       status.dataset.status='loading';
     }
-    $('retryIconCatalog').hidden=fullCatalogReady&&!iconCatalogError;
-    const q=normalizeSearchText($('iconSearch').value);
-    const pool=activeCategory==='Alle'?current:ICON_GROUPS[activeCategory];
-    iconMatches=pool.filter(name=>!q||normalizeSearchText(name).includes(q)||normalizeSearchText(SEARCH_SYNONYMS[name]).includes(q));
+    if(fullCatalogReady){
+      status.textContent+=iconSearchReady?' · Google-Schlagwörter aktiv.':
+        iconSearchRequest?' · Such-Tags werden geladen …':
+        iconSearchError?' · Schlagwörter nicht geladen (Namenssuche bleibt nutzbar).':' · Such-Tags bereit zum Laden.';
+    }
+    $('retryIconCatalog').hidden=fullCatalogReady&&!iconCatalogError&&(iconSearchReady||!!iconSearchRequest);
+    const rawQuery=normalizeSearchText($('iconSearch').value);
+    const q=SEARCH_SPELLING[rawQuery]||rawQuery;
+    const pool=activeCategory==='Alle'?current:ICON_GROUPS[activeCategory]||[];
+    iconMatches=q?pool.map(name=>({name,score:iconSearchScore(name,q)}))
+      .filter(entry=>entry.score>0)
+      .sort((a,b)=>b.score-a.score||
+        (ICON_SEARCH_TAGS.get(a.name)?.popularity??100000)-(ICON_SEARCH_TAGS.get(b.name)?.popularity??100000)||
+        a.name.localeCompare(b.name)).map(entry=>entry.name):[...pool];
     iconMatchCount=iconMatches.length;
     const shownCount=iconMatchCount.toLocaleString('de-DE');
     $('iconResultCount').textContent=iconMatchCount?`${shownCount} Treffer – alle über die Liste erreichbar`:'Keine Treffer';
@@ -896,7 +963,7 @@
     iconScrollFrame=requestAnimationFrame(()=>{iconScrollFrame=0;paintVisibleIconRows();});
   },{passive:true});
   window.addEventListener('resize',()=>{if(!modal.hidden)paintVisibleIconRows();});
-  $('retryIconCatalog').addEventListener('click',()=>loadIconCatalog(true));
+  $('retryIconCatalog').addEventListener('click',()=>{if(!fullCatalogReady||iconCatalogError)loadIconCatalog(true);if(!iconSearchReady)loadIconSearchMetadata(true);});
   function setIconForCurrent(rawIcon){
     const icon=normalizeIconName(rawIcon);
     if(!validIcon(icon)||!ICONS.includes(icon)){
@@ -1086,7 +1153,7 @@
     raf=requestAnimationFrame(frame);
   }
   $('spinHub').addEventListener('click',spin);
-  window.__casinoNoirDebug={get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
+  window.__casinoNoirDebug={get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
   restoreIconCatalog();
   render();
   loadIconCatalog();

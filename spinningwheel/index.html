@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20261109-lift-v2">
-  <script defer src="app.js?v=20261109-lift-v2"></script>
+  <script defer src="app.js?v=20261109-semantic-v1"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -122,12 +122,12 @@
   <div class="modal-backdrop" id="iconModal" role="presentation" hidden>
     <div class="icon-modal" role="dialog" aria-modal="true" aria-labelledby="iconTitle">
       <div class="modal-heading"><div><div class="eyebrow">GOOGLE MATERIAL SYMBOLS</div><h2 id="iconTitle">Symbol auswählen</h2></div><button id="closeIconModal" type="button" class="modal-close" aria-label="Schließen">×</button></div>
-      <label class="searchbox"><span>⌕</span><input id="iconSearch" type="search" placeholder="Symbol suchen: shirt, Kleidung, diamond …" autocomplete="off"></label>
+      <label class="searchbox"><span>⌕</span><input id="iconSearch" type="search" placeholder="Shirt, Kleidung, Waschmaschine, Geschenk …" autocomplete="off"></label>
       <div class="icon-catalog-info"><span id="iconCatalogStatus" role="status" aria-live="polite">Vollständiger Katalog wird geladen …</span><button class="btn btn-quiet btn-refresh" id="retryIconCatalog" type="button" hidden>↻ Erneut laden</button></div>
       <div id="iconCategories" class="icon-categories" aria-label="Symbolkategorien"></div>
       <div id="iconGrid" class="icon-grid" aria-label="Verfügbare Symbole"></div>
       <div class="icon-pager"><span id="iconResultCount" role="status"></span><span>Durch alle Treffer scrollen</span></div>
-      <div class="custom-icon"><label for="customIconName">Material-Symbol-Namen eingeben (z. B. apparel)</label><div class="custom-icon-row"><input id="customIconName" placeholder="z. B. workspace_premium" spellcheck="false"><button class="btn btn-primary" id="useCustomIcon">Übernehmen</button></div><p>Die Suche findet alle Originalnamen und zusätzliche Begriffe wie „shirt“, „T-Shirt“ und „Kleidung“. Nur echte Material-Symbol-Namen werden gespeichert. Alle Treffer sind scrollbar. Der Katalog wird für die Offline-Suche zwischengespeichert. Symbolgrafiken benötigen Google Fonts. Den Namen findest du in der <a href="https://fonts.google.com/icons" target="_blank" rel="noopener noreferrer">Material-Symbol-Bibliothek ↗</a>.</p></div>
+      <div class="custom-icon"><label for="customIconName">Material-Symbol-Namen eingeben (z. B. apparel)</label><div class="custom-icon-row"><input id="customIconName" placeholder="z. B. workspace_premium" spellcheck="false"><button class="btn btn-primary" id="useCustomIcon">Übernehmen</button></div><p>Die Suche berücksichtigt Originalnamen, die offiziellen Google-Schlagwörter und zusätzliche deutsche Begriffe. Zum Beispiel liefert „shirt“ sowohl „apparel“ als auch „laundry“. Nur echte Material-Symbol-Namen werden gespeichert. Alle Treffer sind scrollbar. Der Katalog wird für die Offline-Suche zwischengespeichert. Symbolgrafiken benötigen Google Fonts. Den Namen findest du in der <a href="https://fonts.google.com/icons" target="_blank" rel="noopener noreferrer">Material-Symbol-Bibliothek ↗</a>.</p></div>
     </div>
   </div>
   <div class="presentation" id="presentation" hidden>
