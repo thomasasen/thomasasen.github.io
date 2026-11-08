@@ -536,7 +536,7 @@
   $('winnerEffect').addEventListener('change',ev=>{if(isSpinning)return;config.winnerEffect=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
   $('winnerStrength').addEventListener('change',ev=>{if(isSpinning)return;config.winnerStrength=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
   $('winnerSound').addEventListener('change',ev=>{if(isSpinning)return;config.winnerSound=ev.target.value;save();});
-  $('previewWinnerEffect').addEventListener('click',()=>{if(!isSpinning&&config.segments.length)showWinnerHighlight(highlightedWinner??0);});
+  $('previewWinnerEffect').addEventListener('click',()=>{if(!isSpinning&&config.segments.length)openPresentation({winnerPreview:true});});
   $('previewWinnerSound').addEventListener('click',()=>{if(!isSpinning)playWinnerSound(config.winnerSound);});
   $('paletteSelect').addEventListener('change',ev=>{
     if(isSpinning)return;
@@ -644,9 +644,44 @@
   $('customIconName').addEventListener('keydown',ev=>{if(ev.key==='Enter')setIconForCurrent(ev.target.value.trim().toLowerCase());});
   // Präsentationsmodus: nur EINE Radinstanz wird verschoben, sodass Ergebnis,
   // Bedienbarkeit und Animation in beiden Layouts immer synchron bleiben.
-  function openPresentation(){if(isSpinning)return;if(!editorPanel.hidden)setEditorOpen(false);presentation.hidden=false;$('presentationTarget').appendChild(assembly);$('presentationResult').textContent='Auf die goldene Mitte klicken, um zu drehen';$('spinHub').focus();}
-  function closePresentation(){if(isSpinning)return;presentation.hidden=true;wheelStage.appendChild(assembly);$('showOnlyWheel').focus();}
-  $('showOnlyWheel').addEventListener('click',openPresentation);
+  // Preview the actual wheel without the dimmed/blurred configuration drawer.
+  let effectPreviewActive=false;
+  function openPresentation({winnerPreview=false}={}){
+    if(isSpinning)return;
+    const returnToEditor=winnerPreview&&!editorPanel.hidden;
+    if(!editorPanel.hidden)setEditorOpen(false);
+    effectPreviewActive=returnToEditor;
+    presentation.hidden=false;
+    presentation.classList.toggle('is-effect-preview',winnerPreview);
+    $('presentationTarget').appendChild(assembly);
+    const closeButton=$('closePresentation');
+    closeButton.textContent=winnerPreview?'✕ Zurück zur Konfiguration':'✕ Schließen';
+    closeButton.setAttribute('aria-label',winnerPreview?'Zur Konfiguration zurückkehren':'Präsentationsmodus schließen');
+    if(winnerPreview){
+      const index=highlightedWinner??0;
+      $('presentationResult').textContent=`Effektvorschau · ${safeText(config.segments[index]?.label)}`;
+      showWinnerHighlight(index);
+      closeButton.focus();
+    }else{
+      $('presentationResult').textContent='Auf die goldene Mitte klicken, um zu drehen';
+      $('spinHub').focus();
+    }
+  }
+  function closePresentation(){
+    if(isSpinning)return;
+    presentation.hidden=true;
+    presentation.classList.remove('is-effect-preview');
+    wheelStage.appendChild(assembly);
+    if(effectPreviewActive){
+      effectPreviewActive=false;
+      editorToggle.focus(); // Establish a visible focus-return target before reopening the dialog.
+      setEditorOpen(true);
+      $('previewWinnerEffect').focus();
+    }else{
+      $('showOnlyWheel').focus();
+    }
+  }
+  $('showOnlyWheel').addEventListener('click',()=>openPresentation());
   $('closePresentation').addEventListener('click',closePresentation);
   function rand(){if(globalThis.crypto?.getRandomValues){const buf=new Uint32Array(1);crypto.getRandomValues(buf);return buf[0]/4294967296;}return Math.random();}
   function ensureAudioContext(){
