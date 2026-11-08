@@ -42,7 +42,9 @@
 .btn-editor-toggle{border-color:#a57651;background:linear-gradient(135deg,#46302e,#282029);color:#ffe3b0}
 .btn-editor-toggle:hover{border-color:#dfb779;background:#583839}
 .editor-gear{font-size:17px;line-height:1}
-.editor-backdrop{position:fixed;inset:0;z-index:45;background:rgba(7,4,7,.68);backdrop-filter:blur(3px)}
+.editor-backdrop{position:fixed;inset:0;z-index:45;background:rgba(7,4,7,.68);backdrop-filter:blur(3px);transition:none!important}
+/* Show the real wheel for four seconds without dismissing the settings drawer. */
+.editor-backdrop.is-effect-preview{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
 .editor-panel{position:fixed;z-index:46;inset:0 0 0 auto;width:min(520px,100vw);height:100dvh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:0;border-block:0;border-right:0;scrollbar-color:#79515d #20151b}
 .editor-panel .segment-list{max-height:none;overflow:visible}
 .editor-header{padding-right:70px}

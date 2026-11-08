@@ -542,23 +542,27 @@
     if(!previewEffectTimer)return;
     clearTimeout(previewEffectTimer);
     previewEffectTimer=0;
+    // Restore normal dimming while keeping the editor open.
+    editorBackdrop.classList.remove('is-effect-preview');
     if(!isSpinning){
       if(previewPreviousWinner===null)clearWinnerHighlight();
       else if(previewPreviousWinner!==highlightedWinner)showWinnerHighlight(previewPreviousWinner);
       $('spinHub').disabled=config.segments.length===0;
     }
     $('statusText').textContent=previewPreviousStatus;
-    if(editorPanel.hidden)setEditorOpen(true);
-    $('previewWinnerEffect').focus({preventScroll:true});
+    if(!editorPanel.hidden)$('previewWinnerEffect').focus({preventScroll:true});
   }
   function startEffectPreview(){
     if(isSpinning||!config.segments.length||!presentation.hidden||editorPanel.hidden)return;
-    previewPreviousWinner=highlightedWinner;
-    previewPreviousStatus=$('statusText').textContent;
-    setEditorOpen(false); // removes the drawer AND its blur/dark backdrop
+    if(!previewEffectTimer){
+      previewPreviousWinner=highlightedWinner;
+      previewPreviousStatus=$('statusText').textContent;
+    }else clearTimeout(previewEffectTimer);
+    // Only remove background blur/overlay; the drawer remains visible.
+    editorBackdrop.classList.add('is-effect-preview');
     $('spinHub').disabled=true; // preview must not accidentally trigger a spin
     showWinnerHighlight(previewPreviousWinner??currentIndex(rotation,config.segments.length));
-    $('statusText').textContent='Effektvorschau: Das Rad ist vier Sekunden unverdeckt sichtbar.';
+    $('statusText').textContent='Effektvorschau: Das Rad ist vier Sekunden ohne Blur sichtbar.';
     previewEffectTimer=setTimeout(finishEffectPreview,4000);
   }
   $('previewWinnerEffect').addEventListener('click',startEffectPreview);
