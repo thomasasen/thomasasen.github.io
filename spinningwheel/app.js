@@ -594,8 +594,7 @@
     else if(action==='up'&&idx>0){[config.segments[idx],config.segments[idx-1]]=[config.segments[idx-1],config.segments[idx]];}
     else if(action==='down'&&idx<config.segments.length-1){[config.segments[idx],config.segments[idx+1]]=[config.segments[idx+1],config.segments[idx]];}
     renderSegments();mutate();
-  });
-  // Accessible drag-and-drop: pointer events work with mouse, pen and touch.
+  });  // Accessible drag-and-drop: pointer events work with mouse, pen and touch.
   // Data is reordered only after dropping, never while dragging over another card.
   function moveSegment(from,to,{focus=false}={}){
     if(isSpinning||from===to||from<0||to<0||from>=config.segments.length||to>=config.segments.length)return false;
@@ -608,76 +607,155 @@
     }
     return true;
   }
+  // A physical lift-and-place interaction: the actual card follows the pointer,
+  // while a full-height placeholder makes the other cards move out of the way.
+  // Keep the source node attached so pointer capture works on mouse and touch.
   let dragState=null,dragScrollRaf=0;
-  function clearDragMarks(){
-    list.querySelectorAll('.segment-card').forEach(el=>el.classList.remove('is-dragging','drop-before','drop-after'));
+  function dragCards(state){
+    return [...list.children].filter(el=>el.classList.contains('segment-card')&&el!==state.card);
   }
-  function dragDestination(clientY){
-    const cards=[...list.querySelectorAll('.segment-card')].filter(c=>c.dataset.id!==dragState?.id);
-    const dest=cards.findIndex(c=>clientY<c.getBoundingClientRect().top+c.getBoundingClientRect().height/2);
-    return dest===-1?cards.length:dest;
+  function dragDestination(clientY,state){
+    const cards=dragCards(state);
+    const index=cards.findIndex(el=>clientY<el.getBoundingClientRect().top+el.getBoundingClientRect().height/2);
+    return index<0?cards.length:index;
   }
-  function showDropDestination(dest){
-    clearDragMarks();
-    const source=list.querySelector('.segment-card[data-id="'+dragState.id+'"]');
-    source?.classList.add('is-dragging');
-    const others=[...list.querySelectorAll('.segment-card')].filter(c=>c!==source);
-    if(dest<others.length)others[dest].classList.add('drop-before');
-    else others.at(-1)?.classList.add('drop-after');
+  function updateFloatingCard(state){
+    const maxX=Math.max(8,innerWidth-state.card.offsetWidth-8);
+    state.card.style.left=`${Math.max(8,Math.min(maxX,state.clientX-state.offsetX))}px`;
+    state.card.style.top=`${state.clientY-state.offsetY}px`;
+  }
+  function movePlaceholder(state,dest){
+    const cards=dragCards(state);
+    const target=cards[dest]||null;
+    // Avoid needless reflows and animations when the target position is unchanged.
+    const next=state.placeholder.nextElementSibling;
+    const same=target?next===target:!next||next===state.card;
+    if(same&&state.dest===dest)return;
+    const first=new Map(cards.map(el=>[el,el.getBoundingClientRect().top]));
+    if(target)list.insertBefore(state.placeholder,target);
+    else list.appendChild(state.placeholder);
+    state.dest=dest;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    for(const card of cards){
+      const dy=first.get(card)-card.getBoundingClientRect().top;
+      if(Math.abs(dy)>2){
+        card.getAnimations().forEach(animation=>animation.cancel());
+        card.animate([{transform:`translateY(${dy}px)`},{transform:'translateY(0)'}],{duration:175,easing:'cubic-bezier(.18,.8,.24,1)'});
+      }
+    }
+  }
+  function activateDrag(state){
+    state.active=true;
+    const rect=state.card.getBoundingClientRect();
+    const placeholder=document.createElement('div');
+    placeholder.className='segment-drop-placeholder';
+    placeholder.setAttribute('aria-hidden','true');
+    placeholder.style.height=`${rect.height}px`;
+    placeholder.innerHTML='<span>Hier ablegen</span>';
+    list.insertBefore(placeholder,state.card);
+    state.placeholder=placeholder;
+    state.card.classList.add('is-dragging');
+    state.card.style.width=`${rect.width}px`;
+    state.card.style.height=`${rect.height}px`;
+    state.offsetX=state.startX-rect.left;
+    state.offsetY=state.startY-rect.top;
+    updateFloatingCard(state);
+    document.body.classList.add('is-segment-dragging');
+    dragScrollRaf=requestAnimationFrame(scrollWhileDragging);
   }
   function scrollWhileDragging(){
     dragScrollRaf=0;
-    if(!dragState?.active)return;
+    const state=dragState;
+    if(!state?.active)return;
     const rect=editorPanel.getBoundingClientRect();
-    const pos=dragState.clientY;
-    const edge=70;
-    const velocity=pos>rect.bottom-edge?Math.min(21,4+(pos-(rect.bottom-edge))*.25):
-      pos<rect.top+edge?-Math.min(21,4+((rect.top+edge)-pos)*.25):0;
-    if(velocity)editorPanel.scrollTop+=velocity;
-    const dest=dragDestination(pos);
-    dragState.dest=dest;
-    showDropDestination(dest);
+    const pos=state.clientY,edge=68;
+    const velocity=pos>rect.bottom-edge?Math.min(20,4+(pos-(rect.bottom-edge))*.25):
+      pos<rect.top+edge?-Math.min(20,4+((rect.top+edge)-pos)*.25):0;
+    if(velocity){
+      editorPanel.scrollTop+=velocity;
+      movePlaceholder(state,dragDestination(pos,state));
+    }
     dragScrollRaf=requestAnimationFrame(scrollWhileDragging);
   }
+  function animateDropGhost(source,rect,id){
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const target=[...list.querySelectorAll('.segment-card')].find(el=>el.dataset.id===id);
+    if(!target)return;
+    const targetRect=target.getBoundingClientRect();
+    const ghost=source.cloneNode(true);
+    ghost.className='segment-card segment-drop-flyer';
+    ghost.setAttribute('aria-hidden','true');
+    ghost.style.left=`${rect.left}px`;
+    ghost.style.top=`${rect.top}px`;
+    ghost.style.width=`${rect.width}px`;
+    ghost.style.height=`${rect.height}px`;
+    ghost.querySelectorAll('input,button').forEach(el=>{el.disabled=true;el.tabIndex=-1;});
+    document.body.appendChild(ghost);
+    target.classList.add('is-drop-arriving');
+    let cleaned=false;
+    const done=()=>{if(cleaned)return;cleaned=true;ghost.remove();target.classList.remove('is-drop-arriving');};
+    if(ghost.animate){
+      const animation=ghost.animate([
+        {left:`${rect.left}px`,top:`${rect.top}px`,transform:'rotate(-1.4deg) scale(1.035)',opacity:1},
+        {left:`${targetRect.left}px`,top:`${targetRect.top}px`,transform:'rotate(0deg) scale(1)',opacity:1}
+      ],{duration:190,easing:'cubic-bezier(.17,.84,.35,1)',fill:'forwards'});
+      animation.addEventListener('finish',done,{once:true});
+      animation.addEventListener('cancel',done,{once:true});
+      // Browser/tab throttling must never leave an invisible row or a stale ghost.
+      setTimeout(done,300);
+    }else done();
+  }
   function stopDrag({commit=false}={}){
-    const prior=dragState;
-    if(!prior)return;
+    const state=dragState;
+    if(!state)return;
     dragState=null;
     cancelAnimationFrame(dragScrollRaf);
     dragScrollRaf=0;
-    clearDragMarks();
     document.body.classList.remove('is-segment-dragging');
-    try{if(prior.handle.hasPointerCapture(prior.pointerId))prior.handle.releasePointerCapture(prior.pointerId)}catch{}
-    if(commit&&prior.active&&!isSpinning){
-      const from=config.segments.findIndex(x=>x.id===prior.id);
-      if(moveSegment(from,prior.dest,{focus:true}))toast('Segmentreihenfolge aktualisiert.');
+    const wasActive=state.active;
+    const from=config.segments.findIndex(s=>s.id===state.id);
+    const to=wasActive?[...list.children].filter(el=>el===state.placeholder||el.classList.contains('segment-card')&&el!==state.card).indexOf(state.placeholder):from;
+    const startRect=wasActive?state.card.getBoundingClientRect():null;
+    // Release capture before changing visual state, avoiding a cancel loop.
+    try{if(state.handle.hasPointerCapture(state.pointerId))state.handle.releasePointerCapture(state.pointerId)}catch{}
+    state.card.classList.remove('is-dragging');
+    state.card.style.removeProperty('left');
+    state.card.style.removeProperty('top');
+    state.card.style.removeProperty('width');
+    state.card.style.removeProperty('height');
+    state.placeholder?.remove();
+    if(commit&&wasActive&&!isSpinning&&to>=0){
+      if(moveSegment(from,to,{focus:true}))toast('Segmentreihenfolge aktualisiert.');
+      animateDropGhost(state.card,startRect,state.id);
     }
   }
   list.addEventListener('pointerdown',event=>{
     const grip=event.target.closest('.segment-drag-handle');
     if(!grip||grip.disabled||isSpinning||event.button!==0||dragState)return;
-    const card=grip.closest('.segment-card');
-    if(!card)return;
-    dragState={pointerId:event.pointerId,id:card.dataset.id,handle:grip,startY:event.clientY,clientY:event.clientY,active:false,dest:config.segments.findIndex(s=>s.id===card.dataset.id)};
+    const card=grip.closest('.segment-card');if(!card)return;
+    dragState={pointerId:event.pointerId,id:card.dataset.id,handle:grip,card,startX:event.clientX,startY:event.clientY,clientX:event.clientX,clientY:event.clientY,active:false,placeholder:null,dest:config.segments.findIndex(s=>s.id===card.dataset.id)};
     try{grip.setPointerCapture(event.pointerId)}catch{}
     if(event.pointerType!=='mouse')event.preventDefault();
   });
   list.addEventListener('pointermove',event=>{
-    if(!dragState||event.pointerId!==dragState.pointerId)return;
-    dragState.clientY=event.clientY;
-    if(!dragState.active){
-      if(Math.abs(event.clientY-dragState.startY)<5)return;
-      dragState.active=true;
-      document.body.classList.add('is-segment-dragging');
-      scrollWhileDragging();
+    const state=dragState;
+    if(!state||event.pointerId!==state.pointerId)return;
+    state.clientX=event.clientX;state.clientY=event.clientY;
+    if(!state.active){
+      if(Math.hypot(event.clientX-state.startX,event.clientY-state.startY)<6)return;
+      activateDrag(state);
     }
     event.preventDefault();
-    dragState.dest=dragDestination(event.clientY);
-    showDropDestination(dragState.dest);
+    updateFloatingCard(state);
+    movePlaceholder(state,dragDestination(event.clientY,state));
   });
   list.addEventListener('pointerup',event=>{if(dragState?.pointerId===event.pointerId)stopDrag({commit:true});});
   list.addEventListener('pointercancel',event=>{if(dragState?.pointerId===event.pointerId)stopDrag();});
   list.addEventListener('lostpointercapture',()=>{if(dragState)stopDrag();});
+  // Escape abandons a live drag without moving a segment or closing the editor.
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&dragState){event.preventDefault();event.stopImmediatePropagation();stopDrag();}
+  },true);
   list.addEventListener('keydown',event=>{
     const grip=event.target.closest('.segment-drag-handle');
     if(!grip||isSpinning)return;
@@ -1024,3 +1102,4 @@
     }).catch(()=>{});
   }
 })();
+
