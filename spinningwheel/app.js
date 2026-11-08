@@ -313,7 +313,7 @@
         const center=-90+i*step;
         if(n>72) return;
         if(n>20){
-          const [x,y]=polar(190,center);
+          const [x,y]=polar(220,center);
           // Beschriftungen folgen der Segmentachse. Sobald das Segment unter
           // dem Zeiger bei 12 Uhr steht, erscheint die Nummer aufrecht.
           const labelGroup=e('g',{transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${(i*step).toFixed(5)})`},wheel);
@@ -321,9 +321,11 @@
           t.textContent=String(i+1);return;
         }
         if(!s.showIcon&&!s.showLabel) return;
-        // Der Zeiger reicht bis Radius 210. Symbole und Text bleiben
-        // bewusst darunter, damit an 12 Uhr nichts überdeckt wird.
-        const r=n<=8?154:n<=12?155:170;
+        // Die kürzere Zeigerspitze endet bei Radius 240. Inhalte nutzen
+        // den äußeren Teil des Segmentes, ohne bei 12 Uhr vom Zeiger
+        // oder vom inneren Zierring (Radius 267) überlagert zu werden.
+        // Staffelung nach Segmentzahl hält auch schmale Keile lesbar.
+        const r=n<=8?190:n<=12?198:204;
         const [x,y]=polar(r,center);
         // Die lokale Segmentachse bestimmt die Orientierung, nicht die
         // aktuelle Position des Segments auf der Scheibe. Dadurch sind Text
