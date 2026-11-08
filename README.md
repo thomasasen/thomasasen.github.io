@@ -60,6 +60,18 @@ Repository:
 
 Browserbasierte Projektplanung für Projektportfolios und Roadmaps mit Aufgaben, Abhängigkeiten, Phasen, Gates, Baselines, Risiken, mehreren Ansichten sowie lokalem Import und Export. Projekt- und Planungsdaten werden lokal im Browser gespeichert.
 
+### Casino Noir – Spinning Wheel
+
+Live:
+
+`https://thomasasen.github.io/spinningwheel/`
+
+Repository (führende Entwicklung):
+
+`https://github.com/thomasasen/spinningwheel`
+
+Die statischen Dateien aus dem Spinning-Wheel-Repository liegen als veröffentlichter Stand unter `spinningwheel/` (`index.html`, `styles.css`, `app.js`). Das Glücksrad unterstützt freie Segmente mit Text/Symbolen, Google Material Symbols, Drehkraftanzeige, bis zu 30 Sekunden maximale Drehdauer, einstellbare Auslaufspannung und eine Hervorhebung des Gewinnsegments. Einstellungen bleiben im Browser gespeichert. **Bei neuen Versionen müssen die drei Dateien im Website-Repository synchronisiert werden**, da die Bereitstellung unabhängig vom Quellrepository erfolgt.
+
 ## Neue Services ergänzen
 
 Neue Tools werden in `assets/js/services.js` als weitere Einträge in `window.SERVICES` ergänzt.
@@ -83,7 +95,7 @@ Beispiel:
 
 ```html
 styles.css?v=3.0.4
-services.js?v=3.0.4
+services.js?v=3.0.6
 app.js?v=3.0.4
 ```
 

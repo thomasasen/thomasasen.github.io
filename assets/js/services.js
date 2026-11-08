@@ -31,6 +31,15 @@ window.SERVICES = [
     status: "live",
     url: "/meddpicc-workbench/",
     source: "https://github.com/thomasasen/meddpicc-workbench"
+  },
+  {
+    title: "Casino Noir – Spinning Wheel",
+    category: "Entertainment · Glücksrad",
+    description:
+      "Konfigurierbares Casino-Glücksrad mit Texten, Symbolen, Drehkraftanzeige, einstellbarem Auslaufen und grafischer Gewinnerhervorhebung.",
+    status: "live",
+    url: "/spinningwheel/",
+    source: "https://github.com/thomasasen/spinningwheel"
   }
 
   /*

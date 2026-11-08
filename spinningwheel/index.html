@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#100a0e">
+  <meta name="description" content="Casino Noir – konfigurierbares, animiertes Glücksrad mit Symbolen und eigenen Beschriftungen.">
+  <title>Casino Noir – Spinning Wheel Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Casino Noir, Startseite"><span class="brand-mark" aria-hidden="true">✦</span><span class="brand-name">CASINO <em>NOIR</em><small>SPINNING WHEEL STUDIO</small></span></a>
+      <div class="topbar-right"><span class="edition-tag">INTERACTIVE EDITION <span class="online-dot"></span></span><span id="saveIndicator" class="save-indicator" role="status">● Lokal gespeichert</span><button class="btn btn-editor-toggle" id="toggleEditor" type="button" aria-controls="editorPanel" aria-expanded="false" aria-label="Konfiguration öffnen"><span class="editor-gear" aria-hidden="true">⚙</span><span class="editor-toggle-label">Konfiguration</span></button><button class="btn btn-quiet" id="showOnlyWheel" type="button">⛶ <span>Präsentationsmodus</span></button></div>
+    </header>
+    <main class="main-layout">
+      <section class="stage-panel" aria-label="Vorschau des Glücksrads">
+        <div class="stage-heading"><div class="eyebrow"><i></i> LIVE PREVIEW</div><div class="stage-count" id="stageCount">08 SEGMENTE</div></div>
+        <div class="wheel-stage">
+          <div class="wheel-shadow" aria-hidden="true"></div>
+          <div class="wheel-assembly" id="wheelAssembly">
+            <svg class="wheel-svg" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dynamisches Casino-Noir-Glücksrad" id="wheelSvg">
+              <defs>
+                <radialGradient id="rimMetal" cx="33%" cy="20%" r="91%"><stop offset="0" stop-color="#fff2c1"/><stop offset=".08" stop-color="#f4bd64"/><stop offset=".24" stop-color="#824119"/><stop offset=".42" stop-color="#ffdda0"/><stop offset=".65" stop-color="#a85c28"/><stop offset=".82" stop-color="#ffd89a"/><stop offset="1" stop-color="#6c3518"/></radialGradient>
+                <linearGradient id="rimBevel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6cd"/><stop offset=".12" stop-color="#c77d37"/><stop offset=".36" stop-color="#6c3014"/><stop offset=".50" stop-color="#f8d38e"/><stop offset=".74" stop-color="#693512"/><stop offset="1" stop-color="#edb56a"/></linearGradient>
+                <radialGradient id="faceShine" cx="35%" cy="20%" r="90%"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".26" stop-color="#fff" stop-opacity=".025"/><stop offset=".66" stop-color="#000" stop-opacity=".10"/><stop offset="1" stop-color="#000" stop-opacity=".56"/></radialGradient>
+                <radialGradient id="studGrad" cx="28%" cy="20%" r="79%"><stop offset="0" stop-color="#fff8d5"/><stop offset=".32" stop-color="#ffcd78"/><stop offset=".68" stop-color="#b16028"/><stop offset="1" stop-color="#6b3213"/></radialGradient>
+                <linearGradient id="pointerGold" x1="0" y1="0" x2="1" y2=".25"><stop offset="0" stop-color="#6b3318"/><stop offset=".20" stop-color="#d39746"/><stop offset=".47" stop-color="#fff1b8"/><stop offset=".68" stop-color="#b5692f"/><stop offset="1" stop-color="#713616"/></linearGradient>
+                <linearGradient id="pointerRose" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#ffb0d4"/><stop offset=".36" stop-color="#eb2a83"/><stop offset="1" stop-color="#820f3c"/></linearGradient>
+                <filter id="wheelDrop" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="11" flood-color="#000" flood-opacity=".65"/></filter>
+                <filter id="studGlow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="2.4"/></filter>
+                <filter id="pointerGlow" x="-90%" y="-50%" width="280%" height="190%"><feGaussianBlur stdDeviation="4.2"/></filter>
+                <clipPath id="faceClip"><circle cx="320" cy="320" r="266"/></clipPath>
+              </defs>
+              <g id="rotatingWheel" filter="url(#wheelDrop)"></g>
+              <g id="fixedPointer" aria-hidden="true">
+                <path d="M293 14 Q320 7 347 14 L350 61 Q339 91 320 108 Q301 92 290 61Z" fill="#df246f" opacity=".45" filter="url(#pointerGlow)"/>
+                <path d="M292 13 Q320 9 348 13 L347 59 L320 110 L293 59Z" fill="url(#pointerGold)" stroke="#4d2313" stroke-width="2"/>
+                <path d="M304 24 H336 L335 57 L320 87 L305 57Z" fill="url(#pointerRose)" stroke="#ffdf9f" stroke-width="1.6"/>
+                <path d="M320 29 L324 43 L335 47 L324 51 L320 65 L316 51 L305 47 L316 43Z" fill="#fff3cf" opacity=".91"/>
+              </g>
+            </svg>
+            <div class="power-meter" id="powerMeter" role="meter" aria-label="Aktuelle Drehkraft" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 Prozent Drehkraft">
+              <span class="power-meter-title" aria-hidden="true">KRAFT</span>
+              <div class="power-meter-track" aria-hidden="true"><div class="power-meter-fill" id="powerFill"></div><div class="power-meter-tip" id="powerTip"></div></div>
+              <output class="power-meter-value" id="powerValue" aria-hidden="true">0%</output>
+            </div>
+            <button type="button" class="spin-hub" id="spinHub" aria-label="Glücksrad mit der aktuellen Kraft drehen" aria-describedby="powerHint" title="Aktuelle Drehkraft übernehmen und Rad drehen"><span>DREHEN</span><small>✦</small></button>
+          </div>
+        </div>
+        <p class="power-hint" id="powerHint">Der Kraftbalken pendelt automatisch. Klick auf die goldene Mitte übernimmt die aktuelle Drehkraft.</p>
+        <div class="stage-footer">
+          <div class="stage-status" aria-live="polite" id="resultStatus"><span class="status-orb"></span><span id="statusText">Auf die goldene Mitte klicken, um zu drehen</span></div>
+          <div class="stage-footnote">NUR DIE MITTE STARTET DAS RAD</div>
+        </div>
+        <div class="stage-notice" id="densityNotice" hidden></div>
+      </section>
+      <div class="editor-backdrop" id="editorBackdrop" hidden></div>
+      <aside class="editor-panel" id="editorPanel" role="dialog" aria-modal="true" aria-labelledby="editorTitle" hidden>
+        <div class="editor-header"><div><div class="eyebrow">✦ &nbsp; WHEEL CONFIGURATION</div><h1 id="editorTitle">Dein Glücksrad</h1><p>Jedes Segment individuell gestalten.</p></div><button class="editor-close" id="closeEditor" type="button" aria-label="Konfiguration schließen" title="Schließen">×</button></div>
+        <div class="section-title"><div><h2>Segmente <span class="count-pill" id="segmentCount">8</span></h2><p>Text, Material-Symbol oder beides</p></div><button type="button" id="addSegment" class="btn btn-primary"><span aria-hidden="true">＋</span> Hinzufügen</button></div>
+        <div class="segment-list" id="segmentList" aria-label="Segmentliste"></div>
+        <div class="editor-settings">
+          <h2>Spiel & Darstellung</h2>
+          <div class="setting-row"><label for="spinDuration">Maximale Drehdauer</label><div class="setting-value"><input type="range" id="spinDuration" min="3" max="30" value="6" step="1"><output id="durationLabel" for="spinDuration">6 s</output></div></div>
+          <div class="setting-row setting-row-coast"><div class="setting-descriptor"><label for="coastIntensity">Auslaufspannung</label><small>Höher = das Rad schleicht länger über die letzten Felder.</small></div><div class="setting-value"><input type="range" id="coastIntensity" min="0" max="100" value="65" step="5" aria-describedby="coastHint"><output id="coastLabel" for="coastIntensity">65 %</output></div></div><p class="setting-help" id="coastHint">0 %: bremst früh · 100 %: bleibt bis kurz vor Schluss in Bewegung.</p>
+          <div class="setting-row"><label for="soundEnabled">Mechanisches Klickgeräusch</label><label class="toggle"><input type="checkbox" id="soundEnabled" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><label for="paletteSelect">Farbwelt</label><select id="paletteSelect"><option value="noir">Casino Noir</option><option value="ruby">Royal Rouge</option><option value="emerald">Emerald Lounge</option><option value="midnight">Midnight Gold</option></select></div>
+        </div>
+        <div class="editor-actions"><button class="btn btn-quiet" id="exportJson" type="button">↧ JSON exportieren</button><button class="btn btn-quiet" id="importJson" type="button">↥ JSON importieren</button><button class="btn btn-quiet btn-danger" id="resetConfig" type="button">Zurücksetzen</button><input id="importFile" type="file" accept="application/json,.json" hidden></div>
+        <div class="icon-credit">Symbole: <a href="https://fonts.google.com/icons" target="_blank" rel="noopener noreferrer">Google Material Symbols ↗</a> · Konfiguration wird lokal im Browser gespeichert.</div>
+      </aside>
+    </main>
+    <footer class="main-footer"><span>CASINO NOIR © 2026</span><span>A CUSTOM WHEEL EXPERIENCE</span></footer>
+  </div>
+  <div class="modal-backdrop" id="iconModal" role="presentation" hidden>
+    <div class="icon-modal" role="dialog" aria-modal="true" aria-labelledby="iconTitle">
+      <div class="modal-heading"><div><div class="eyebrow">GOOGLE MATERIAL SYMBOLS</div><h2 id="iconTitle">Symbol auswählen</h2></div><button id="closeIconModal" type="button" class="modal-close" aria-label="Schließen">×</button></div>
+      <label class="searchbox"><span>⌕</span><input id="iconSearch" type="search" placeholder="Symbol suchen: shirt, Kleidung, diamond …" autocomplete="off"></label>
+      <div class="icon-catalog-info"><span id="iconCatalogStatus" role="status" aria-live="polite">Vollständiger Katalog wird geladen …</span><button class="btn btn-quiet btn-refresh" id="retryIconCatalog" type="button" hidden>↻ Erneut laden</button></div>
+      <div id="iconCategories" class="icon-categories" aria-label="Symbolkategorien"></div>
+      <div id="iconGrid" class="icon-grid" aria-label="Verfügbare Symbole"></div>
+      <div class="icon-pager"><span id="iconResultCount" role="status"></span><span>Durch alle Treffer scrollen</span></div>
+      <div class="custom-icon"><label for="customIconName">Material-Symbol-Namen eingeben (z. B. apparel)</label><div class="custom-icon-row"><input id="customIconName" placeholder="z. B. workspace_premium" spellcheck="false"><button class="btn btn-primary" id="useCustomIcon">Übernehmen</button></div><p>Die Suche findet alle Originalnamen und zusätzliche Begriffe wie „shirt“, „T-Shirt“ und „Kleidung“. Nur echte Material-Symbol-Namen werden gespeichert. Alle Treffer sind scrollbar. Der Katalog wird für die Offline-Suche zwischengespeichert. Symbolgrafiken benötigen Google Fonts. Den Namen findest du in der <a href="https://fonts.google.com/icons" target="_blank" rel="noopener noreferrer">Material-Symbol-Bibliothek ↗</a>.</p></div>
+    </div>
+  </div>
+  <div class="presentation" id="presentation" hidden>
+    <button class="presentation-close btn" id="closePresentation" type="button" aria-label="Präsentationsmodus schließen">✕ Schließen</button>
+    <div id="presentationTarget"></div>
+    <div id="presentationResult" class="presentation-result" aria-live="polite"></div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
