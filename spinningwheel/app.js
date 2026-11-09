@@ -220,7 +220,7 @@
     ];
     return data.map((v,i) => ({ id:makeId(), label:v[0], icon:v[1], showLabel:v[2], showIcon:v[3], color:PALETTES.noir[i%2], weight:1 }));
   }
-  function defaultConfig() { return {version:1, segments:initialSegments(), duration:6, coast:65, sound:true, winnerEffect:'cinematic', winnerStrength:'refined', winnerSound:'chime', palette:'noir', sizeMode:'equal',spinMode:'physical',pointerSpring:65,pointerDamping:60,pointerIntensity:60,tickStyle:'soft'}; }
+  function defaultConfig() { return {version:1, segments:initialSegments(), duration:6, coast:65, sound:true, winnerEffect:'cinematic', winnerStrength:'refined', winnerSound:'chime', palette:'noir', sizeMode:'equal',spinMode:'physical',pointerSpring:65,pointerDamping:60,pointerIntensity:60,tickStyle:'soft',subdivisions:7}; }
   function validColor(v) { return /^#[0-9a-f]{6}$/i.test(v || ''); }
   function validIcon(v) { return isValidMaterialSymbolName(v); }
   function clampSetting(value,fallback){return Number.isFinite(Number(value))&&value!==null?Math.max(0,Math.min(100,Number(value))):fallback;}
@@ -260,7 +260,7 @@
     const palette = PALETTES[raw.palette] ? raw.palette : 'noir';
     const ids=new Set();
     return {
-      version:2, palette, sizeMode:raw.sizeMode==='proportional'?'proportional':'equal',spinMode:raw.spinMode==='weighted'?'weighted':'physical', pointerSpring:clampSetting(raw.pointerSpring,65),pointerDamping:clampSetting(raw.pointerDamping,60),pointerIntensity:clampSetting(raw.pointerIntensity,60),tickStyle:['soft','mechanical','ratchet','metal'].includes(raw.tickStyle)?raw.tickStyle:'soft',
+      version:2, palette, sizeMode:raw.sizeMode==='proportional'?'proportional':'equal',spinMode:raw.spinMode==='weighted'?'weighted':'physical', pointerSpring:clampSetting(raw.pointerSpring,65),pointerDamping:clampSetting(raw.pointerDamping,60),pointerIntensity:clampSetting(raw.pointerIntensity,60),tickStyle:['soft','mechanical','ratchet','metal'].includes(raw.tickStyle)?raw.tickStyle:'soft',subdivisions:Number.isFinite(Number(raw.subdivisions))?Math.max(1,Math.min(12,Math.round(Number(raw.subdivisions)))):7,
       duration: Number.isFinite(Number(raw.duration)) ? Math.min(30,Math.max(3,Math.round(Number(raw.duration)))) : 6,
       coast: Number.isFinite(Number(raw.coast)) ? Math.min(100,Math.max(0,Math.round(Number(raw.coast)))) : 65,
       sound:raw.sound !== false,
@@ -561,13 +561,27 @@
     e('circle',{cx:320,cy:320,r:267,fill:'url(#faceShine)','pointer-events':'none'},wheel);
     e('circle',{cx:320,cy:320,r:268,fill:'none',stroke:'#f4d290','stroke-width':3.5},wheel);
     e('circle',{cx:320,cy:320,r:277,fill:'none',stroke:'#512514','stroke-width':1.4},wheel);
-    // Echte Nietenoptik, unabhängig von der Segmentanzahl.
-    for(let j=0;j<56;j++){
-      const [x,y]=polar(291,(j/56)*360-90);
-      e('circle',{cx:x,cy:y,r:5.4,fill:'#ffca74',opacity:.34,filter:'url(#studGlow)'},wheel);
-      e('circle',{cx:x,cy:y,r:4.6,fill:'url(#studGrad)',stroke:'#703719','stroke-width':.75},wheel);
-      e('circle',{cx:x-1.1,cy:y-1.6,r:1.25,fill:'#fff9d8',opacity:.8},wheel);
+    // Each little outer stud corresponds to a physical ratchet tooth. The
+    // very same calculated angles drive the mechanical collisions.
+    const pegAngles=n?window.CasinoWheelPhysics.buildPegAngles(ranges(),config.subdivisions):
+      Array.from({length:56},(_,j)=>(j/56)*360-90);
+    const dense=pegAngles.length>180;
+    if(n){
+      for(const angle of pegAngles){
+        const [x1,y1]=polar(246,angle),[x2,y2]=polar(264,angle);
+        e('line',{x1:x1.toFixed(3),y1:y1.toFixed(3),x2:x2.toFixed(3),y2:y2.toFixed(3),
+          stroke:'#ffe1a2','stroke-width':dense?.65:1.15,opacity:dense?.25:.45,'pointer-events':'none'},wheel);
+      }
     }
+    for(const angle of pegAngles){
+      const [x,y]=polar(291,angle),radius=dense?2.6:pegAngles.length>110?3.6:4.6;
+      if(!dense)e('circle',{cx:x,cy:y,r:radius+0.8,fill:'#ffca74',opacity:.34,filter:'url(#studGlow)'},wheel);
+      e('circle',{cx:x,cy:y,r:radius,fill:'url(#studGrad)',stroke:'#703719','stroke-width':.65,'data-ratchet-tooth':'true'},wheel);
+      if(!dense)e('circle',{cx:x-radius*.24,cy:y-radius*.35,r:radius*.27,fill:'#fff9d8',opacity:.8},wheel);
+    }
+    $('subdivisionDetail').textContent=n
+      ?pegAngles.length+' Rastpunkte auf dem Rad. Die Gewinnsegmente bleiben unverändert.'
+      :'Die Rastpunkte passen sich der Anzahl der Segmente an.';
     if(n){
       const geometry=ranges();
       config.segments.forEach((s,i)=>{
@@ -656,6 +670,12 @@
     if(isSpinning) lockEditor(true);
   }
   for(const key of ['pointerSpring','pointerDamping','pointerIntensity'])$(key).addEventListener('input',event=>{config[key]=clampSetting(event.target.value,60);$(key+'Label').textContent=config[key]+' %';save();});
+  $('subdivisions').addEventListener('input',event=>{
+    if(isSpinning)return;
+    config.subdivisions=Math.max(1,Math.min(12,Math.round(Number(event.target.value)||7)));
+    $('subdivisionsLabel').textContent=String(config.subdivisions);
+    mutate();
+  });
   $('tickStyle').addEventListener('change',event=>{config.tickStyle=event.target.value;save();});
   $('previewTick').addEventListener('click',()=>{ensureAudioContext();tick(true);});
   $('sizeMode').addEventListener('change',event=>{
@@ -675,7 +695,7 @@
         :'Echter Auslauf: Alle gleich großen Sektoren haben näherungsweise die gleiche Chance. Segmentgewichte beeinflussen hier das Ergebnis nicht.'
       :'Gezielte Gewichtung: Der Gewinner wird vor der Drehung nach den eingestellten Gewichten gezogen. Die Landung in der Sektormitte ist dabei eine gesteuerte Darstellung, keine Physiksimulation.';
   }
-  function renderSettings(){ $('spinMode').value=config.spinMode;renderMechanicsHint(); $('sizeMode').value=config.sizeMode;for(const key of ['pointerSpring','pointerDamping','pointerIntensity']){$(key).value=config[key];$(key+'Label').textContent=config[key]+' %';}$('tickStyle').value=config.tickStyle; $('spinDuration').value=config.duration; $('durationLabel').textContent=config.duration+' s'; $('coastIntensity').value=config.coast; $('coastLabel').textContent=config.coast+' %'; $('soundEnabled').checked=config.sound; $('winnerEffect').value=config.winnerEffect; $('winnerStrength').value=config.winnerStrength; $('winnerSound').value=config.winnerSound; $('paletteSelect').value=config.palette; }
+  function renderSettings(){ $('spinMode').value=config.spinMode;renderMechanicsHint(); $('sizeMode').value=config.sizeMode;$('subdivisions').value=config.subdivisions;$('subdivisionsLabel').textContent=String(config.subdivisions);for(const key of ['pointerSpring','pointerDamping','pointerIntensity']){$(key).value=config[key];$(key+'Label').textContent=config[key]+' %';}$('tickStyle').value=config.tickStyle; $('spinDuration').value=config.duration; $('durationLabel').textContent=config.duration+' s'; $('coastIntensity').value=config.coast; $('coastLabel').textContent=config.coast+' %'; $('soundEnabled').checked=config.sound; $('winnerEffect').value=config.winnerEffect; $('winnerStrength').value=config.winnerStrength; $('winnerSound').value=config.winnerSound; $('paletteSelect').value=config.palette; }
   function render(){drawWheel();renderSegments();renderSettings();updateWeightPercentages();}
   function save(){
     try {
@@ -731,7 +751,7 @@
     $('addSegment').disabled=locked;
     $('spinDuration').disabled=locked;
     $('coastIntensity').disabled=locked;
-    for(const id of ['spinMode','sizeMode','pointerSpring','pointerDamping','pointerIntensity','tickStyle','previewTick','previewPointer','profileSelect','profileNew','profileDuplicate','profileRename','profileDelete','profileExportAll','profileImportMode'])$(id).disabled=locked;
+    for(const id of ['spinMode','sizeMode','subdivisions','pointerSpring','pointerDamping','pointerIntensity','tickStyle','previewTick','previewPointer','profileSelect','profileNew','profileDuplicate','profileRename','profileDelete','profileExportAll','profileImportMode'])$(id).disabled=locked;
     $('soundEnabled').disabled=locked;
     for(const id of ['winnerEffect','winnerStrength','winnerSound','previewWinnerEffect','previewWinnerSound'])$(id).disabled=locked;
     $('paletteSelect').disabled=locked;
@@ -1409,7 +1429,7 @@
     const state=physics.create({
       angle:rotation,power,duration:config.duration,coast:config.coast,
       pointerIntensity:config.pointerIntensity,pointerSpring:config.pointerSpring,
-      geometry,random:rand
+      subdivisions:config.subdivisions,geometry,random:rand
     });
     currentPhysicalState=state;
     lastTickAt=0;
