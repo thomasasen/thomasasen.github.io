@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261109-lift-v2">
-  <script defer src="app.js?v=20261109-semantic-v1"></script>
+  <link rel="stylesheet" href="styles.css?v=20261109-profiles-v1">
+  <script defer src="app.js?v=20261109-profiles-v1"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -68,12 +68,35 @@
       <div class="editor-backdrop" id="editorBackdrop" hidden></div>
       <aside class="editor-panel" id="editorPanel" role="dialog" aria-modal="true" aria-labelledby="editorTitle" hidden>
         <div class="editor-header"><div><div class="eyebrow">✦ &nbsp; WHEEL CONFIGURATION</div><h1 id="editorTitle">Dein Glücksrad</h1><p>Jedes Segment individuell gestalten.</p></div><button class="editor-close" id="closeEditor" type="button" aria-label="Konfiguration schließen" title="Schließen">×</button></div>
+        <section class="profile-manager" aria-labelledby="profilesTitle">
+          <h2 id="profilesTitle">Gespeicherte Glücksräder</h2>
+          <div class="profile-select-row"><label for="profilePicker">Aktives Glücksrad</label><select id="profilePicker" aria-label="Gespeichertes Glücksrad auswählen"></select></div>
+          <div class="profile-name-row"><label for="profileName">Name</label><input id="profileName" type="text" maxlength="60" autocomplete="off" aria-label="Name des Glücksrads" value="Mein Glücksrad"></div>
+          <div class="profile-buttons"><button class="btn btn-primary" type="button" id="newProfile">＋ Neu</button><button class="btn" type="button" id="saveProfile">Speichern</button><button class="btn" type="button" id="duplicateProfile">Duplizieren</button><button class="btn" type="button" id="renameProfile">Umbenennen</button><button class="btn btn-danger" type="button" id="deleteProfile">Löschen</button></div>
+          <p class="profile-hint">Alle Änderungen werden automatisch auf diesem Gerät gespeichert. Weitere Glücksräder bleiben getrennt.</p><p id="profileSaveStatus" class="profile-save-status" role="status" aria-live="polite">● Lokal gespeichert</p>
+        </section>
         <div class="section-title"><div><h2>Segmente <span class="count-pill" id="segmentCount">8</span></h2><p>Text, Material-Symbol oder beides</p></div><button type="button" id="addSegment" class="btn btn-primary"><span aria-hidden="true">＋</span> Hinzufügen</button></div>
         <div class="segment-list" id="segmentList" aria-label="Segmentliste"></div>
         <div class="editor-settings">
+          <div class="probability-settings">
+            <h2>Gewinnwahrscheinlichkeiten</h2>
+            <p class="setting-help">Chance = Segmentgewicht geteilt durch die Summe aller Gewichte. Gewicht 0 schließt das Segment von der Ziehung aus.</p>
+            <label for="proportionalMode">Darstellung auf dem Rad</label>
+            <select id="proportionalMode"><option value="equal">Gleich große Segmente · Chancen separat</option><option value="proportional">Segmentgröße entspricht Gewinnchance</option></select>
+            <p id="probabilitySummary" class="probability-summary" role="status" aria-live="polite"></p>
+          </div>
           <h2>Spiel & Darstellung</h2>
           <div class="setting-row"><label for="spinDuration">Maximale Drehdauer</label><div class="setting-value"><input type="range" id="spinDuration" min="3" max="30" value="6" step="1"><output id="durationLabel" for="spinDuration">6 s</output></div></div>
           <div class="setting-row setting-row-coast"><div class="setting-descriptor"><label for="coastIntensity">Auslaufspannung</label><small>Höher = das Rad schleicht länger über die letzten Felder.</small></div><div class="setting-value"><input type="range" id="coastIntensity" min="0" max="100" value="65" step="5" aria-describedby="coastHint"><output id="coastLabel" for="coastIntensity">65 %</output></div></div><p class="setting-help" id="coastHint">0 %: bremst früh · 100 %: bleibt bis kurz vor Schluss in Bewegung.</p>
+          <details class="physics-settings"><summary>Zeigermechanik und Klickklang</summary>
+            <p class="setting-help">Der Zeiger reagiert auf echte Segmentwechsel. Die Auslaufspannung steuert weiterhin das Bremsverhalten.</p>
+            <div class="setting-row"><label for="pointerSpring">Zeigerfederung</label><div class="setting-value"><input type="range" id="pointerSpring" min="0" max="100" step="5" value="55"><output id="pointerSpringLabel">55 %</output></div></div>
+            <div class="setting-row"><label for="pointerDamping">Zeigerdämpfung</label><div class="setting-value"><input type="range" id="pointerDamping" min="0" max="100" step="5" value="62"><output id="pointerDampingLabel">62 %</output></div></div>
+            <div class="setting-row"><label for="pointerIntensity">Zeigerausschlag</label><div class="setting-value"><input type="range" id="pointerIntensity" min="0" max="100" step="5" value="60"><output id="pointerIntensityLabel">60 %</output></div></div>
+            <div class="winner-control"><label for="mechanicalSound">Mechanischer Klang</label>
+              <select id="mechanicalSound"><option value="subtle">Dezent · leichter Kontakt</option><option value="ratchet">Klassische Ratsche</option><option value="metal">Massiver Metallzeiger</option><option value="casino">Casino · weiches Klicken</option></select></div>
+            <button id="previewMechanicalSound" class="btn winner-preview" type="button">♫ Klang vorhören</button>
+          </details>
           <div class="winner-settings" aria-labelledby="winnerSettingsTitle">
             <h3 id="winnerSettingsTitle">Gewinnerinszenierung</h3>
             <div class="winner-control">
@@ -113,7 +136,8 @@
           <div class="setting-row"><label for="soundEnabled">Mechanisches Klickgeräusch</label><label class="toggle"><input type="checkbox" id="soundEnabled" checked><span class="toggle-slider"></span></label></div>
           <div class="setting-row"><label for="paletteSelect">Farbwelt</label><select id="paletteSelect"><option value="noir">Casino Noir</option><option value="ruby">Royal Rouge</option><option value="emerald">Emerald Lounge</option><option value="midnight">Midnight Gold</option></select></div>
         </div>
-        <div class="editor-actions"><button class="btn btn-quiet" id="exportJson" type="button">↧ JSON exportieren</button><button class="btn btn-quiet" id="importJson" type="button">↥ JSON importieren</button><button class="btn btn-quiet btn-danger" id="resetConfig" type="button">Zurücksetzen</button><input id="importFile" type="file" accept="application/json,.json" hidden></div>
+        <div class="export-options"><label for="importMode">Beim Import</label><select id="importMode"><option value="replace">Aktives Glücksrad ersetzen</option><option value="new">Als neues Glücksrad anlegen</option></select></div>
+        <div class="editor-actions"><button class="btn btn-quiet" id="exportJson" type="button">↧ Aktuelles Rad exportieren</button><button class="btn btn-quiet" id="exportAllJson" type="button">↧ Alle Räder exportieren</button><button class="btn btn-quiet" id="importJson" type="button">↥ JSON importieren</button><button class="btn btn-quiet btn-danger" id="resetConfig" type="button">Zurücksetzen</button><input id="importFile" type="file" accept="application/json,.json" hidden></div>
         <div class="icon-credit">Symbole: <a href="https://fonts.google.com/icons" target="_blank" rel="noopener noreferrer">Google Material Symbols ↗</a> · Konfiguration wird lokal im Browser gespeichert.</div>
       </aside>
     </main>
