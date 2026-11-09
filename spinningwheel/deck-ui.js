@@ -238,6 +238,15 @@
       commit({...data,pending:{deckId:d.id,profileId,segmentId:segment.id,phase:'ready',card:null}},{render:false});
       setTimeout(()=>{if(data.pending?.segmentId===segment.id)renderPending();},900);
     }
+    function refreshCardIcon(){
+      // Refresh when the webfont or its codepoint catalogue becomes available,
+      // without restarting the 3D flip or changing the already drawn card.
+      const card=data.pending?.phase==='revealed'?data.pending.card:null;
+      const icon=card?.icon?options.resolveCardIcon?.(card.icon):null;
+      const emblem=$('cardFront').querySelector('.card-face-icon');
+      emblem.classList.toggle('material-symbols-rounded',Boolean(icon?.material));
+      emblem.textContent=card?(icon?.glyph||'✦'):'';
+    }
     function showOverlay(){
       const p=data.pending,overlay=$('cardOverlay');
       clearTimeout(animationTimer);
@@ -256,10 +265,7 @@
       const face=$('cardFront'),inner=$('cardFlip');
       face.querySelector('.card-face-title').textContent=revealed?(p.card.title||'CASINO NOIR'):'';
       face.querySelector('.card-face-text').textContent=revealed?p.card.text:'';
-      const emblem=face.querySelector('.card-face-icon');
-      const emblemIcon=revealed&&p.card.icon?options.resolveCardIcon?.(p.card.icon):null;
-      emblem.classList.toggle('material-symbols-rounded',Boolean(emblemIcon?.material));
-      emblem.textContent=revealed?(emblemIcon?.glyph||'✦'):'';
+      refreshCardIcon();
       inner.style.setProperty('--picked-color',revealed?(p.card.color||'#d6b679'):'#d6b679');
       inner.classList.remove('is-revealed');
       if(revealed){
@@ -307,7 +313,7 @@
     return {
       availableDecks,hasDeck:id=>data.decks.some(d=>d.id===id),
       isBlocking:()=>Boolean(data.pending),
-      makePending,render:renderAll,setCardIcon,
+      makePending,render:renderAll,setCardIcon,refreshCardIcon,
       createFromSegment:()=>safe(()=>{const id=addDeck();$('deckDetails').scrollIntoView({behavior:'smooth',block:'nearest'});return id;}),
       importDecks,exportData:({includeSession=false,referencedIds=null}={})=>({
         decks:clone(data.decks.filter(d=>!referencedIds||referencedIds.includes(d.id))

@@ -157,6 +157,7 @@
     catalogUpdatedAt=updatedAt;
     iconCatalogError='';
     if(!isSpinning){drawWheel();renderSegments();}
+    decks?.refreshCardIcon();
     if(!$('iconModal').hidden)renderIconPicker();
   }
   function restoreIconCatalog() {
@@ -1614,6 +1615,7 @@
       if(!faces.length)return;
       iconFontReady=true;
       if(!isSpinning){drawWheel();renderSegments();}
+      decks?.refreshCardIcon();
       if(!modal.hidden)renderIconPicker();
     }).catch(()=>{});
   }
