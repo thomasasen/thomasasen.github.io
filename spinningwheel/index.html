@@ -9,8 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261109-pointer-v3">
-  <script defer src="app.js?v=20261109-pointer-v3"></script>
+  <link rel="stylesheet" href="styles.css?v=20261109-mechanics-v1">
+  <script defer src="wheel-physics.js?v=20261109-mechanics-v1"></script>
+  <script defer src="app.js?v=20261109-mechanics-v1"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -94,8 +95,10 @@
         </section>
         <div class="editor-settings">
           <h2>Spiel & Darstellung</h2>
-          <div class="setting-row"><div class="setting-descriptor"><label for="sizeMode">Gewinnchancen darstellen</label><small>Gleich große Felder zeigen nicht die tatsächlichen Gewinnchancen. Die Prozentangaben stehen an jedem Segment.</small></div><select id="sizeMode"><option value="equal">Gleich große Segmente</option><option value="proportional">Proportionale Segmente</option></select></div>
-          <div class="setting-row"><label for="spinDuration">Maximale Drehdauer</label><div class="setting-value"><input type="range" id="spinDuration" min="3" max="30" value="6" step="1"><output id="durationLabel" for="spinDuration">6 s</output></div></div>
+          <div class="setting-row"><div class="setting-descriptor"><label for="spinMode">Drehmechanik</label><small>Physik: Das Rad bestimmt den Gewinner erst beim Stillstand.</small></div><select id="spinMode"><option value="physical">Echter Auslauf (Physik)</option><option value="weighted">Gezielte Gewichtung</option></select></div>
+          <p class="setting-help mechanics-hint" id="spinModeHint">Im Physikmodus gibt es keinen vorher ausgewählten Gewinner. Die Segmentgrößen bestimmen die Chancen näherungsweise; individuelle Gewichte zählen nur bei proportionalen Sektoren.</p>
+          <div class="setting-row"><div class="setting-descriptor"><label for="sizeMode">Sektorgrößen</label><small>Proportionale Sektoren übernehmen die Gewichte als Flächenanteile. Gleich große Sektoren haben im Physikmodus etwa gleiche Chancen.</small></div><select id="sizeMode"><option value="equal">Gleich große Segmente</option><option value="proportional">Proportionale Segmente</option></select></div>
+          <div class="setting-row"><label for="spinDuration">Drehträgheit (Richtwert)</label><div class="setting-value"><input type="range" id="spinDuration" min="3" max="30" value="6" step="1"><output id="durationLabel" for="spinDuration">6 s</output></div></div>
           <div class="setting-row setting-row-coast"><div class="setting-descriptor"><label for="coastIntensity">Auslaufspannung</label><small>Höher = das Rad schleicht länger über die letzten Felder.</small></div><div class="setting-value"><input type="range" id="coastIntensity" min="0" max="100" value="65" step="5" aria-describedby="coastHint"><output id="coastLabel" for="coastIntensity">65 %</output></div></div><p class="setting-help" id="coastHint">0 %: bremst früh · 100 %: bleibt bis kurz vor Schluss in Bewegung.</p>
           <div class="winner-settings" aria-labelledby="winnerSettingsTitle">
             <h3 id="winnerSettingsTitle">Gewinnerinszenierung</h3>
