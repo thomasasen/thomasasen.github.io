@@ -271,7 +271,8 @@
         id:(()=>{const input=s?.id;const id=typeof input==='string'&&/^[a-z0-9-]{1,100}$/i.test(input)&&!ids.has(input)?input:makeId();ids.add(id);return id;})(), label: String(s?.label ?? '').slice(0,80),
         icon:validIcon(normalizeIconName(s?.icon)) ? normalizeIconName(s.icon) : 'star',
         showLabel:s?.showLabel !== false, showIcon:s?.showIcon !== false,
-        color:validColor(s?.color) ? s.color : PALETTES[palette][i%2], weight:validWeight(s?.weight ?? 1)
+        color:validColor(s?.color) ? s.color : PALETTES[palette][i%2], weight:validWeight(s?.weight ?? 1),
+        action:s?.action==='deck'?'deck':'result',deckId:typeof s?.deckId==='string'&&/^[a-z0-9_-]{1,100}$/i.test(s.deckId)?s.deckId:''
       }))
     };
   }
@@ -304,13 +305,14 @@
     select.value=profiles.activeId;
   }
   function switchProfile(id){
-    if(isSpinning||id===profiles.activeId)return;
+    if(isSpinning||decks?.isBlocking()||id===profiles.activeId)return;
     const target=profiles.entries.find(p=>p.id===id);
     if(!target)return;
     resetPointer();config=cloneConfig(target.config);profiles.activeId=id;rotation=0;wheel.style.transform='rotate(0deg)';
     clearWinnerHighlight();render();save();profileStatus();
   }
   let isSpinning=false, rotation=0, iconFontReady=false, currentIconTarget=null;
+  let decks=null;
   let highlightedWinner=null;
   let activeCategory='Alle', lastFocusedElement=null, saveOk=true, audioContext=null, lastTickAt=0, lastTickSector=-1, toastTimer=0;
   const svg=$('wheelSvg'), wheel=$('rotatingWheel'), modal=$('iconModal'), assembly=$('wheelAssembly');
@@ -634,7 +636,7 @@
     wheel.style.transform=`rotate(${rotation}deg)`;
     $('segmentCount').textContent=n.toLocaleString('de-DE');
     $('stageCount').textContent=String(n).padStart(2,'0')+' SEGMENTE'+(config.sizeMode==='proportional'?' · FLÄCHE = CHANCE':' · GLEICHE FLÄCHEN'+(config.segments.some(s=>s.weight!==config.segments[0]?.weight)?' · GEWICHTETE CHANCEN':''));
-    $('spinHub').disabled=isSpinning||n===0;
+    $('spinHub').disabled=isSpinning||n===0||Boolean(decks?.isBlocking());
     const notice=$('densityNotice');
     if(n>72)notice.textContent='Bei mehr als 72 Segmenten zeigt das Rad nur die Farbsegmente. Inhalte bleiben in der Liste und im Ergebnis erhalten.';
     else if(n>20)notice.textContent='Ab 21 Segmenten verwendet das Rad Nummern statt Symbolen und Text, um das Design lesbar zu halten.';
@@ -665,6 +667,10 @@
         <button class="icon-action" type="button" data-action="up" aria-label="Segment ${i+1} nach oben" title="Nach oben" ${i===0?'disabled':''}>↑</button>
         <button class="icon-action" type="button" data-action="down" aria-label="Segment ${i+1} nach unten" title="Nach unten" ${i===config.segments.length-1?'disabled':''}>↓</button>
         <button class="icon-action" type="button" data-action="duplicate" aria-label="Segment ${i+1} duplizieren" title="Duplizieren">⧉</button>
+      </div>
+      <div class="segment-action-row">
+        <label>Aktion nach Gewinn<select data-field="action" aria-label="Aktion von Segment ${i+1}"><option value="result" ${s.action!=='deck'?'selected':''}>Ergebnis anzeigen</option><option value="deck" ${s.action==='deck'?'selected':''}>Karte aus Deck ziehen</option></select></label>
+        ${s.action==='deck'?'<label>Kartendeck auswählen<select data-field="deckId" aria-label="Kartendeck für Segment '+(i+1)+'"><option value="">Bitte wählen …</option>'+((decks?.availableDecks()||[]).map(d=>'<option value="'+escapeHtml(d.id)+'" '+(d.id===s.deckId?'selected':'')+'>'+escapeHtml(d.name)+'</option>').join(''))+(s.deckId&&!decks?.hasDeck(s.deckId)?'<option selected value="'+escapeHtml(s.deckId)+'">⚠ Deck fehlt</option>':'')+'</select></label><button class="btn btn-quiet" type="button" data-action="newDeck">＋ Neues Deck</button>':''}
       </div>
     </div>`).join('');
     if(isSpinning) lockEditor(true);
@@ -748,7 +754,7 @@
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   $('profileExportAll').addEventListener('click',()=>{
-    const all={...profiles,entries:profiles.entries.map(p=>({...p,config:p.id===profiles.activeId?cloneConfig(config):p.config}))};
+    const all={...profiles,version:3,entries:profiles.entries.map(p=>({...p,config:p.id===profiles.activeId?cloneConfig(config):p.config})),...decks.exportData({includeSession:$('includeDeckSession').checked})};
     downloadJson(all,'casino-noir-alle-'+new Date().toISOString().slice(0,10)+'.json');
   });
   profileStatus();
@@ -811,6 +817,13 @@
   list.addEventListener('change',ev=>{
     if(isSpinning)return;
     const el=ev.target,field=el.dataset.field;
+    if(field==='action'||field==='deckId'){
+      const segment=config.segments.find(x=>x.id===el.closest('.segment-card')?.dataset.id);
+      if(!segment)return;
+      if(field==='action'){segment.action=el.value==='deck'?'deck':'result';if(segment.action==='result')segment.deckId='';}
+      else segment.deckId=el.value;
+      renderSegments();save();return;
+    }
     if(field==='weight'){
       const segment=config.segments.find(x=>x.id===el.closest('.segment-card')?.dataset.id);
       if(!segment)return;
@@ -829,6 +842,11 @@
     const action=btn.dataset.action;
     if(action==='drag')return; // Pointer/keyboard handlers own the reorder grip.
     if(action==='icon'){openIconPicker(card.dataset.id);return;}
+    if(action==='newDeck'){
+      const id=decks?.createFromSegment();
+      if(id){config.segments[idx].action='deck';config.segments[idx].deckId=id;renderSegments();save();}
+      return;
+    }
     if(action==='delete'){config.segments.splice(idx,1);}
     else if(action==='duplicate'){const clone={...config.segments[idx],id:makeId()};config.segments.splice(idx+1,0,clone);}
     else if(action==='up'&&idx>0){[config.segments[idx],config.segments[idx-1]]=[config.segments[idx-1],config.segments[idx]];}
@@ -1007,7 +1025,7 @@
     if(moveSegment(from,to,{focus:true}))toast('Segmentreihenfolge aktualisiert.');
   });
   $('addSegment').addEventListener('click',()=>{
-    if(isSpinning)return;
+    if(isSpinning||decks?.isBlocking())return;
     const n=config.segments.length;
     config.segments.push({id:makeId(),label:`Segment ${n+1}`,icon:'star',showLabel:true,showIcon:true,color:PALETTES[config.palette][n%2],weight:1});
     renderSegments();mutate();list.scrollTop=list.scrollHeight;
@@ -1057,10 +1075,12 @@
   });
   $('resetConfig').addEventListener('click',()=>{
     if(!confirm('Alle Segmente und Einstellungen auf die Ausgangsversion zurücksetzen?'))return;
+    if(decks?.isBlocking()){toast('Bitte zuerst die Kartenziehung abschließen.');return;}
     config=defaultConfig();rotation=0;clearWinnerHighlight();render();save();$('statusText').textContent='Auf die goldene Mitte klicken, um zu drehen';toast('Ausgangskonfiguration wiederhergestellt.');
   });
   $('exportJson').addEventListener('click',()=>{
-    downloadJson({version:2,name:activeProfile().name,config},'casino-noir-'+activeProfile().name.toLowerCase().replace(/[^a-z0-9äöüß-]+/gi,'-')+'-'+new Date().toISOString().slice(0,10)+'.json');
+    const ids=[...new Set(config.segments.filter(s=>s.action==='deck').map(s=>s.deckId).filter(Boolean))];
+    downloadJson({version:3,name:activeProfile().name,config,...decks.exportData({includeSession:$('includeDeckSession').checked,referencedIds:ids})},'casino-noir-'+activeProfile().name.toLowerCase().replace(/[^a-z0-9äöüß-]+/gi,'-')+'-'+new Date().toISOString().slice(0,10)+'.json');
     toast('Glücksrad exportiert.');
   });
   $('importJson').addEventListener('click',()=>{if(!isSpinning){$('importFile').value='';$('importFile').click();}});
@@ -1069,16 +1089,23 @@
     if(file.size>2*1024*1024){toast('Die JSON-Datei ist zu groß (maximal 2 MB).');return;}
     try{
       const parsed=JSON.parse(await file.text());
-      if(parsed?.version>2)throw Error('Neuere, nicht unterstützte Formatversion.');
+      if(parsed?.version>3)throw Error('Neuere, nicht unterstützte Formatversion.');
       let incoming;
-      if(parsed?.version===2&&Array.isArray(parsed.entries)){
+      if(parsed?.version>=2&&Array.isArray(parsed.entries)){
         if(!parsed.entries.length||parsed.entries.length>100)throw Error('Ungültige Anzahl von Profilen.');
         incoming=parsed.entries.map(p=>({name:String(p?.name||'Import').slice(0,60),config:cloneConfig(p.config)}));
       }else incoming=[{name:String(parsed.name||file.name.replace(/\.json$/i,'')).slice(0,60),config:cloneConfig(parsed.config||parsed)}];
       const mode=$('profileImportMode').value;
+      if(mode==='replace'&&incoming.length!==1)throw Error('Zum Ersetzen bitte eine einzelne Konfiguration auswählen.');
+      if(mode!=='replace'&&profiles.entries.length+incoming.length>100)throw Error('Maximal 100 Glücksräder möglich.');
+      if(mode==='replace'&&!confirm('Aktuelles Glücksrad durch den Import ersetzen?'))return;
+      const map=Array.isArray(parsed?.decks)&&parsed.decks.length
+        ?decks.importDecks(parsed,{keepState:parsed.sessionState===true}):{};
+      for(const item of incoming)for(const segment of item.config.segments){
+        if(segment.action==='deck'&&Object.hasOwn(map,segment.deckId))segment.deckId=map[segment.deckId];
+      }
       if(mode==='replace'){
         if(incoming.length!==1)throw Error('Zum Ersetzen bitte eine einzelne Konfiguration auswählen.');
-        if(!confirm('Aktuelles Glücksrad durch den Import ersetzen?'))return;
         config=incoming[0].config;activeProfile().config=cloneConfig(config);
       }else{
         if(profiles.entries.length+incoming.length>100)throw Error('Maximal 100 Glücksräder möglich.');
@@ -1175,6 +1202,10 @@
         ? `„${String(rawIcon).slice(0,30)}“ gibt es nicht als Material Symbol. Bitte ein angezeigtes Symbol wählen.`
         : 'Der vollständige Google-Katalog ist noch nicht verfügbar. Bitte Symbol aus der Liste wählen.');
       return;
+    }
+    if(currentIconTarget?.startsWith('deck-card:')){
+      const id=currentIconTarget.slice('deck-card:'.length);
+      closeIconPicker();decks?.setCardIcon(id,icon);return;
     }
     const s=config.segments.find(s=>s.id===currentIconTarget);if(!s)return;
     s.icon=icon;s.showIcon=true;
@@ -1429,6 +1460,7 @@
       lastPhysicalVelocity:details.velocity??null,lastRatchetStrength:details.ratchetStrength??null
     });
     currentPhysicalState=null;
+    if(selected.action==='deck')decks?.makePending(selected,profiles.activeId);
   }
   function runMechanicalSpin(power){
     const physics=window.CasinoWheelPhysics;
@@ -1525,7 +1557,7 @@
   }
   function spin(){
     const n=config.segments.length;
-    if(isSpinning||!n)return;
+    if(isSpinning||decks?.isBlocking()||!n)return;
     if(config.spinMode==='weighted'&&totalWeight()<=0){
       toast('Alle Segmentgewichte sind 0.');return;
     }
@@ -1560,6 +1592,13 @@
   }
   $('spinHub').addEventListener('click',spin);
   window.__casinoNoirDebug={selectWinner, ranges,get controlledWinnerSelections(){return controlledWinnerSelections;},get currentPhysicalState(){return currentPhysicalState?{angle:currentPhysicalState.angle,velocity:currentPhysicalState.velocity,contacts:currentPhysicalState.contacts,elapsed:currentPhysicalState.elapsed,restSeconds:currentPhysicalState.restSeconds,done:currentPhysicalState.done}:null;},get pointerAngle(){return pointerAngle;},get pointerContactCount(){return pointerContactCount;},get pointerMaxDeflection(){return pointerMaxDeflection;}, get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
+  decks=window.CasinoNoirDeckUI.create({
+    getProfiles:()=>profiles.entries.map(p=>p.id===profiles.activeId?{...p,config}:p),
+    refreshSegments:()=>renderSegments(),
+    pickIcon:id=>openIconPicker('deck-card:'+id),
+    notify:message=>toast(message),
+    isSpinning:()=>isSpinning
+  });
   restoreIconCatalog();
   render();
   loadIconCatalog();
