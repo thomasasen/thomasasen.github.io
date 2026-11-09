@@ -261,3 +261,18 @@ body.editor-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){.segment-card.is-dragging{transform:none}}
 @media(max-width:520px){.segment-top{grid-template-columns:36px 29px minmax(30px,1fr) 36px 22px;gap:6px}.segment-drag-handle{width:36px;min-height:43px}}
 
+
+/* Casino Noir: compact probability and profile management controls. */
+.profile-manager{padding:14px 13px;margin:10px 0 20px;background:linear-gradient(145deg,#302128,#21171e);border:1px solid #87603e;border-radius:12px;display:grid;gap:9px}
+.profile-manager h2{margin:0 0 2px;color:#f6d69e;font:600 16px/1.3 Georgia,serif}
+.profile-manager label{font:600 11px/1.3 system-ui,sans-serif;color:#e7caa7}
+.profile-manager select{width:100%;min-height:42px;padding:8px 10px;color:#f5e6d0;background:#241820;border:1px solid #835d53;border-radius:8px}
+.profile-manager select:focus-visible,.weight-control input:focus-visible{outline:2px solid #f5ce88;outline-offset:2px}
+.profile-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.profile-actions .btn{flex:1 1 110px;min-height:40px;padding:7px 9px;font-size:11px}
+.profile-actions label{flex:1 1 100%;margin-top:3px}
+.profile-actions select{flex:1 1 100%}
+.weight-control{display:flex;align-items:center;gap:5px;color:#e9cda3;font:600 10px/1.2 system-ui,sans-serif}
+.weight-control input{width:64px;min-width:0;min-height:32px;padding:4px 5px;background:#241820;border:1px solid #79594e;border-radius:6px;color:#ffe7bc;font:12px system-ui,sans-serif}
+.weight-control small{min-width:42px;color:#e8b97a;text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:520px){.segment-controls{flex-wrap:wrap;gap:5px}.weight-control{order:2;width:100%;justify-content:flex-end}.weight-control input{width:70px}}
