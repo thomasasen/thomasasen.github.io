@@ -1434,7 +1434,7 @@
       raf=requestAnimationFrame(minimizedFrame);
       return;
     }
-    let previous=performance.now();
+    let previous=performance.now(),coastAnnounced=false;
     function frame(now){
       const dt=Math.min(.06,Math.max(0,(now-previous)/1000));previous=now;
       physics.advance(state,dt,speed=>{
@@ -1447,6 +1447,12 @@
         }
       });
       wheel.style.transform=`rotate(${state.angle}deg)`;
+      if(!coastAnnounced&&!state.done&&Math.abs(state.velocity)<35){
+        coastAnnounced=true;
+        $('statusText').textContent='Das Rad läuft langsam aus …';
+      }
+      // A result is not available until the integrator has established
+      // sustained mechanical rest (including any low-speed rebounds).
       if(state.done){done();return;}
       raf=requestAnimationFrame(frame);
     }
@@ -1525,7 +1531,7 @@
     }
   }
   $('spinHub').addEventListener('click',spin);
-  window.__casinoNoirDebug={selectWinner, ranges,get controlledWinnerSelections(){return controlledWinnerSelections;},get currentPhysicalState(){return currentPhysicalState?{angle:currentPhysicalState.angle,velocity:currentPhysicalState.velocity,contacts:currentPhysicalState.contacts,elapsed:currentPhysicalState.elapsed}:null;},get pointerAngle(){return pointerAngle;},get pointerContactCount(){return pointerContactCount;},get pointerMaxDeflection(){return pointerMaxDeflection;}, get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
+  window.__casinoNoirDebug={selectWinner, ranges,get controlledWinnerSelections(){return controlledWinnerSelections;},get currentPhysicalState(){return currentPhysicalState?{angle:currentPhysicalState.angle,velocity:currentPhysicalState.velocity,contacts:currentPhysicalState.contacts,elapsed:currentPhysicalState.elapsed,restSeconds:currentPhysicalState.restSeconds,done:currentPhysicalState.done}:null;},get pointerAngle(){return pointerAngle;},get pointerContactCount(){return pointerContactCount;},get pointerMaxDeflection(){return pointerMaxDeflection;}, get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
   restoreIconCatalog();
   render();
   loadIconCatalog();
