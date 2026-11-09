@@ -257,7 +257,9 @@
       face.querySelector('.card-face-title').textContent=revealed?(p.card.title||'CASINO NOIR'):'';
       face.querySelector('.card-face-text').textContent=revealed?p.card.text:'';
       const emblem=face.querySelector('.card-face-icon');
-      emblem.textContent=revealed?(p.card.icon?.replaceAll('_',' ')||'✦'):'';
+      const emblemIcon=revealed&&p.card.icon?options.resolveCardIcon?.(p.card.icon):null;
+      emblem.classList.toggle('material-symbols-rounded',Boolean(emblemIcon?.material));
+      emblem.textContent=revealed?(emblemIcon?.glyph||'✦'):'';
       inner.style.setProperty('--picked-color',revealed?(p.card.color||'#d6b679'):'#d6b679');
       inner.classList.remove('is-revealed');
       if(revealed){
