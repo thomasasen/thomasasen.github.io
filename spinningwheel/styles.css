@@ -282,6 +282,10 @@ body.editor-open{overflow:hidden}
 
 
 /* Casino Noir card decks, segment assignments and cinematic reveal */
+/* IMPORTANT: never set filter, opacity < 1, or overflow:hidden on .card-flip:
+   those grouping properties flatten its preserve-3d children, leaving the
+   mirrored card back in front of the text. Put the shadow on the perspective
+   container, outside the rotating 3D subtree. */
 .segment-action-row{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:11px 0 0 30px;padding-top:11px;border-top:1px solid #49323b}
 .segment-action-row label{display:grid;gap:5px;flex:1 1 155px;min-width:0;color:#d9baac;font-size:10px;font-weight:650}
 .segment-action-row select{width:100%;min-height:36px;min-width:0;color:#f8ddbd;background:#251920;border:1px solid #73535b;border-radius:7px;padding:7px;font-size:11px}
@@ -324,8 +328,8 @@ body.card-overlay-open{overflow:hidden}
 .card-reveal-panel{width:min(540px,100%);min-height:0;text-align:center;padding:clamp(12px,3vw,28px);border:1px solid #986e48;border-radius:19px;background:linear-gradient(160deg,#2f1d25,#140e15 64%);box-shadow:0 30px 120px #000c,inset 0 1px #e0b67555}
 .card-reveal-panel h2{margin:8px 0 4px;font:normal clamp(24px,4vw,34px) Georgia,serif;color:#ffdfae}
 .card-reveal-panel>p{margin:0 0 14px;font-size:12px;color:#c9a7a4}
-.card-perspective{perspective:1100px;display:grid;place-items:center;margin:auto;width:min(100%,320px);aspect-ratio:2.5/3.5}
-.card-flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;transform:rotateY(0deg) translateY(0);transition:transform 1.05s cubic-bezier(.2,.72,.14,1);--picked-color:#d6b679;filter:drop-shadow(0 22px 21px #060407b0)}
+.card-perspective{perspective:1100px;display:grid;place-items:center;margin:auto;width:min(100%,320px);aspect-ratio:2.5/3.5;filter:drop-shadow(0 22px 21px #060407b0)}
+.card-flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;transform:rotateY(0deg) translateY(0);transition:transform 1.05s cubic-bezier(.2,.72,.14,1);--picked-color:#d6b679}
 .card-flip.is-revealed{transform:rotateY(180deg) translateY(-6px)}
 .card-face{position:absolute;inset:0;border-radius:15px;border:3px solid #ab824a;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:inset 0 0 0 3px #25191d,inset 0 0 0 5px #d6b579}
 .card-back{display:grid;place-items:center;background:repeating-linear-gradient(45deg,#1c1018 0 8px,#2b1825 8px 16px);color:#f0cd8f}
