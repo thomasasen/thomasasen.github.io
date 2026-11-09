@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261109-lift-v2">
-  <script defer src="app.js?v=20261109-semantic-v1"></script>
+  <link rel="stylesheet" href="styles.css?v=20261109-wheel-v2">
+  <script defer src="app.js?v=20261109-wheel-v2"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -70,8 +70,26 @@
         <div class="editor-header"><div><div class="eyebrow">✦ &nbsp; WHEEL CONFIGURATION</div><h1 id="editorTitle">Dein Glücksrad</h1><p>Jedes Segment individuell gestalten.</p></div><button class="editor-close" id="closeEditor" type="button" aria-label="Konfiguration schließen" title="Schließen">×</button></div>
         <div class="section-title"><div><h2>Segmente <span class="count-pill" id="segmentCount">8</span></h2><p>Text, Material-Symbol oder beides</p></div><button type="button" id="addSegment" class="btn btn-primary"><span aria-hidden="true">＋</span> Hinzufügen</button></div>
         <div class="segment-list" id="segmentList" aria-label="Segmentliste"></div>
+        <section class="profile-manager" aria-labelledby="profileHeading">
+          <h2 id="profileHeading">Gespeicherte Glücksräder</h2>
+          <label for="profileSelect">Aktives Glücksrad</label>
+          <select id="profileSelect" aria-label="Gespeichertes Glücksrad auswählen"></select>
+          <div class="profile-actions">
+            <button class="btn btn-quiet" type="button" id="profileNew">＋ Neu</button>
+            <button class="btn btn-quiet" type="button" id="profileDuplicate">⧉ Kopieren</button>
+            <button class="btn btn-quiet" type="button" id="profileRename">✎ Umbenennen</button>
+            <button class="btn btn-quiet btn-danger" type="button" id="profileDelete">× Löschen</button>
+          </div>
+          <div class="profile-actions">
+            <button class="btn btn-quiet" type="button" id="profileExportAll">Alle exportieren</button>
+            <label for="profileImportMode">JSON importieren als</label>
+            <select id="profileImportMode"><option value="new">Neues Glücksrad</option><option value="replace">Aktuelles ersetzen</option></select>
+          </div>
+          <p class="setting-help">Änderungen werden automatisch im Browser gespeichert. Ein JSON-Export dient als zusätzliche Sicherung.</p>
+        </section>
         <div class="editor-settings">
           <h2>Spiel & Darstellung</h2>
+          <div class="setting-row"><div class="setting-descriptor"><label for="sizeMode">Gewinnchancen darstellen</label><small>Gleich große Felder zeigen nicht die tatsächlichen Gewinnchancen. Die Prozentangaben stehen an jedem Segment.</small></div><select id="sizeMode"><option value="equal">Gleich große Segmente</option><option value="proportional">Proportionale Segmente</option></select></div>
           <div class="setting-row"><label for="spinDuration">Maximale Drehdauer</label><div class="setting-value"><input type="range" id="spinDuration" min="3" max="30" value="6" step="1"><output id="durationLabel" for="spinDuration">6 s</output></div></div>
           <div class="setting-row setting-row-coast"><div class="setting-descriptor"><label for="coastIntensity">Auslaufspannung</label><small>Höher = das Rad schleicht länger über die letzten Felder.</small></div><div class="setting-value"><input type="range" id="coastIntensity" min="0" max="100" value="65" step="5" aria-describedby="coastHint"><output id="coastLabel" for="coastIntensity">65 %</output></div></div><p class="setting-help" id="coastHint">0 %: bremst früh · 100 %: bleibt bis kurz vor Schluss in Bewegung.</p>
           <div class="winner-settings" aria-labelledby="winnerSettingsTitle">
@@ -110,6 +128,11 @@
             <button id="previewWinnerSound" class="btn winner-preview winner-preview-sound" type="button"><span class="winner-preview-glyph" aria-hidden="true">♫</span><span class="winner-preview-label">Sound anhören</span><span class="winner-preview-trailing" aria-hidden="true">›</span></button>
             <p class="winner-setting-note">Soundeffekte werden im Browser erzeugt. Mechanisches Zeigerklicken lässt sich getrennt einstellen.</p>
           </div>
+          <div class="setting-row"><div class="setting-descriptor"><label for="pointerSpring">Zeigerfederung</label><small>Wie schnell der Zeiger zurückfedert</small></div><div class="setting-value"><input type="range" id="pointerSpring" min="10" max="100" value="65" step="5"><output id="pointerSpringLabel">65 %</output></div></div>
+          <div class="setting-row"><label for="pointerDamping">Zeigerdämpfung</label><div class="setting-value"><input type="range" id="pointerDamping" min="10" max="100" value="60" step="5"><output id="pointerDampingLabel">60 %</output></div></div>
+          <div class="setting-row"><label for="pointerIntensity">Zeigerbewegung</label><div class="setting-value"><input type="range" id="pointerIntensity" min="0" max="100" value="60" step="5"><output id="pointerIntensityLabel">60 %</output></div></div>
+          <div class="setting-row"><label for="tickStyle">Klickcharakter</label><select id="tickStyle"><option value="soft">Weiches Casino-Klicken</option><option value="mechanical">Mechanisch</option><option value="ratchet">Klassische Ratsche</option><option value="metal">Massiver Metallzeiger</option></select></div>
+          <button type="button" class="btn btn-quiet" id="previewTick">Klick anhören</button>
           <div class="setting-row"><label for="soundEnabled">Mechanisches Klickgeräusch</label><label class="toggle"><input type="checkbox" id="soundEnabled" checked><span class="toggle-slider"></span></label></div>
           <div class="setting-row"><label for="paletteSelect">Farbwelt</label><select id="paletteSelect"><option value="noir">Casino Noir</option><option value="ruby">Royal Rouge</option><option value="emerald">Emerald Lounge</option><option value="midnight">Midnight Gold</option></select></div>
         </div>
