@@ -72,7 +72,7 @@
     }
     return hits;
   }
-  function create({angle=0,power=0,duration=6,coast=65,pointerIntensity=60,pointerSpring=65,subdivisions=7,geometry,random=Math.random}){
+  function create({angle=0,power=0,duration=6,coast=65,pointerIntensity=60,pointerSpring=65,ratchetStrength=50,subdivisions=7,geometry,random=Math.random}){
     if(!Array.isArray(geometry)||!geometry.length||!geometry.some(s=>s.size>0))
       throw Error('Keine sichtbaren Segmente vorhanden.');
     const pulse=Math.max(0,Math.min(1,power));
@@ -89,6 +89,7 @@
       frictionScale:frictionScale*frictionVariance,
       pointerIntensity:Math.max(0,Math.min(100,pointerIntensity)),
       pointerSpring:Math.max(0,Math.min(100,pointerSpring)),
+      ratchetStrength:Number.isFinite(Number(ratchetStrength))?Math.max(0,Math.min(100,Number(ratchetStrength))):50,
       geometry,
       // Soft failsafe only. Never force-stop a moving wheel at a timer limit.
       safetyStartSeconds:Math.max(12,Math.min(85,Math.max(3,duration)*2.5+6))
@@ -124,11 +125,25 @@
         state.contacts++;
         state.lastImpactSpeed=speed;
         const stiffness=.35+.65*state.pointerIntensity/100;
-        if(speed<9+9*stiffness){
-          velocity=-Math.sign(state.velocity)*Math.abs(velocity)*(.08+.10*state.pointerSpring/100);
+        const strength=state.ratchetStrength/100;
+        // The detent slider changes the energy required to overcome a tooth,
+        // not the result. A soft pawl can clear one more tooth; a firm pawl
+        // reverses when the remaining kinetic energy cannot overcome it.
+        // Large initial speeds remain essentially unaffected.
+        const detentSpeed=2.5+27*Math.pow(strength,1.4)*(.7+.3*stiffness);
+        if(speed<detentSpeed){
+          // A dissipative elastic return, with no second strike of the same
+          // tooth. Reverse rotation is still damped continuously by friction.
+          const restitution=(.08+.10*state.pointerSpring/100)*(.85+.3*strength);
+          velocity=-Math.sign(state.velocity)*Math.abs(velocity)*restitution;
           if(typeof onContact==='function')onContact(speed,state.contacts);
           break;
         }
+        // Energy lost while the pointer lifts and releases over the tooth.
+        // The quadratic term acts mostly at low speed. No fixed goal angle.
+        const energyCost=(.20+.36*strength)*detentSpeed*detentSpeed;
+        const remainingEnergy=Math.max(0,velocity*velocity-energyCost);
+        velocity=Math.sign(velocity)*Math.sqrt(remainingEnergy);
         velocity*=1-(.0025+.013/(1+speed/135))*stiffness;
         if(typeof onContact==='function')onContact(speed,state.contacts);
       }

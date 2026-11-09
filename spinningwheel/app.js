@@ -220,7 +220,7 @@
     ];
     return data.map((v,i) => ({ id:makeId(), label:v[0], icon:v[1], showLabel:v[2], showIcon:v[3], color:PALETTES.noir[i%2], weight:1 }));
   }
-  function defaultConfig() { return {version:1, segments:initialSegments(), duration:6, coast:65, sound:true, winnerEffect:'cinematic', winnerStrength:'refined', winnerSound:'chime', palette:'noir', sizeMode:'equal',spinMode:'physical',pointerSpring:65,pointerDamping:60,pointerIntensity:60,tickStyle:'soft',subdivisions:7}; }
+  function defaultConfig() { return {version:1, segments:initialSegments(), duration:6, coast:65, sound:true, winnerEffect:'cinematic', winnerStrength:'refined', winnerSound:'chime', palette:'noir', sizeMode:'equal',spinMode:'physical',pointerSpring:65,pointerDamping:60,pointerIntensity:60,tickStyle:'soft',subdivisions:7,ratchetStrength:50}; }
   function validColor(v) { return /^#[0-9a-f]{6}$/i.test(v || ''); }
   function validIcon(v) { return isValidMaterialSymbolName(v); }
   function clampSetting(value,fallback){return Number.isFinite(Number(value))&&value!==null?Math.max(0,Math.min(100,Number(value))):fallback;}
@@ -260,7 +260,7 @@
     const palette = PALETTES[raw.palette] ? raw.palette : 'noir';
     const ids=new Set();
     return {
-      version:2, palette, sizeMode:raw.sizeMode==='proportional'?'proportional':'equal',spinMode:raw.spinMode==='weighted'?'weighted':'physical', pointerSpring:clampSetting(raw.pointerSpring,65),pointerDamping:clampSetting(raw.pointerDamping,60),pointerIntensity:clampSetting(raw.pointerIntensity,60),tickStyle:['soft','mechanical','ratchet','metal'].includes(raw.tickStyle)?raw.tickStyle:'soft',subdivisions:Number.isFinite(Number(raw.subdivisions))?Math.max(1,Math.min(12,Math.round(Number(raw.subdivisions)))):7,
+      version:2, palette, sizeMode:raw.sizeMode==='proportional'?'proportional':'equal',spinMode:raw.spinMode==='weighted'?'weighted':'physical', pointerSpring:clampSetting(raw.pointerSpring,65),pointerDamping:clampSetting(raw.pointerDamping,60),pointerIntensity:clampSetting(raw.pointerIntensity,60),ratchetStrength:clampSetting(raw.ratchetStrength,50),tickStyle:['soft','mechanical','ratchet','metal'].includes(raw.tickStyle)?raw.tickStyle:'soft',subdivisions:Number.isFinite(Number(raw.subdivisions))?Math.max(1,Math.min(12,Math.round(Number(raw.subdivisions)))):7,
       duration: Number.isFinite(Number(raw.duration)) ? Math.min(30,Math.max(3,Math.round(Number(raw.duration)))) : 6,
       coast: Number.isFinite(Number(raw.coast)) ? Math.min(100,Math.max(0,Math.round(Number(raw.coast)))) : 65,
       sound:raw.sound !== false,
@@ -676,6 +676,12 @@
     $('subdivisionsLabel').textContent=String(config.subdivisions);
     mutate();
   });
+  $('ratchetStrength').addEventListener('input',event=>{
+    if(isSpinning||config.spinMode!=='physical')return;
+    config.ratchetStrength=clampSetting(event.target.value,50);
+    $('ratchetStrengthLabel').textContent=config.ratchetStrength+' %';
+    save();
+  });
   $('tickStyle').addEventListener('change',event=>{config.tickStyle=event.target.value;save();});
   $('previewTick').addEventListener('click',()=>{ensureAudioContext();tick(true);});
   $('sizeMode').addEventListener('change',event=>{
@@ -689,13 +695,14 @@
     mutate();updateWeightPercentages();renderMechanicsHint();
   });
   function renderMechanicsHint(){
+    $('ratchetStrength').disabled=isSpinning||config.spinMode!=='physical';
     $('spinModeHint').textContent=config.spinMode==='physical'
       ?config.sizeMode==='proportional'
         ?'Echter Auslauf: Der Gewinner ergibt sich aus der Endposition. Die Sektorflächen entsprechen den Gewichten, die tatsächlichen Häufigkeiten können durch Reibung und Zeigerkontakte abweichen.'
         :'Echter Auslauf: Alle gleich großen Sektoren haben näherungsweise die gleiche Chance. Segmentgewichte beeinflussen hier das Ergebnis nicht.'
       :'Gezielte Gewichtung: Der Gewinner wird vor der Drehung nach den eingestellten Gewichten gezogen. Die Landung in der Sektormitte ist dabei eine gesteuerte Darstellung, keine Physiksimulation.';
   }
-  function renderSettings(){ $('spinMode').value=config.spinMode;renderMechanicsHint(); $('sizeMode').value=config.sizeMode;$('subdivisions').value=config.subdivisions;$('subdivisionsLabel').textContent=String(config.subdivisions);for(const key of ['pointerSpring','pointerDamping','pointerIntensity']){$(key).value=config[key];$(key+'Label').textContent=config[key]+' %';}$('tickStyle').value=config.tickStyle; $('spinDuration').value=config.duration; $('durationLabel').textContent=config.duration+' s'; $('coastIntensity').value=config.coast; $('coastLabel').textContent=config.coast+' %'; $('soundEnabled').checked=config.sound; $('winnerEffect').value=config.winnerEffect; $('winnerStrength').value=config.winnerStrength; $('winnerSound').value=config.winnerSound; $('paletteSelect').value=config.palette; }
+  function renderSettings(){ $('spinMode').value=config.spinMode;$('ratchetStrength').value=config.ratchetStrength;$('ratchetStrengthLabel').textContent=config.ratchetStrength+' %';renderMechanicsHint(); $('sizeMode').value=config.sizeMode;$('subdivisions').value=config.subdivisions;$('subdivisionsLabel').textContent=String(config.subdivisions);for(const key of ['pointerSpring','pointerDamping','pointerIntensity']){$(key).value=config[key];$(key+'Label').textContent=config[key]+' %';}$('tickStyle').value=config.tickStyle; $('spinDuration').value=config.duration; $('durationLabel').textContent=config.duration+' s'; $('coastIntensity').value=config.coast; $('coastLabel').textContent=config.coast+' %'; $('soundEnabled').checked=config.sound; $('winnerEffect').value=config.winnerEffect; $('winnerStrength').value=config.winnerStrength; $('winnerSound').value=config.winnerSound; $('paletteSelect').value=config.palette; }
   function render(){drawWheel();renderSegments();renderSettings();updateWeightPercentages();}
   function save(){
     try {
@@ -751,7 +758,8 @@
     $('addSegment').disabled=locked;
     $('spinDuration').disabled=locked;
     $('coastIntensity').disabled=locked;
-    for(const id of ['spinMode','sizeMode','subdivisions','pointerSpring','pointerDamping','pointerIntensity','tickStyle','previewTick','previewPointer','profileSelect','profileNew','profileDuplicate','profileRename','profileDelete','profileExportAll','profileImportMode'])$(id).disabled=locked;
+    for(const id of ['spinMode','sizeMode','subdivisions','ratchetStrength','pointerSpring','pointerDamping','pointerIntensity','tickStyle','previewTick','previewPointer','profileSelect','profileNew','profileDuplicate','profileRename','profileDelete','profileExportAll','profileImportMode'])$(id).disabled=locked;
+    $('ratchetStrength').disabled=locked||config.spinMode!=='physical';
     $('soundEnabled').disabled=locked;
     for(const id of ['winnerEffect','winnerStrength','winnerSound','previewWinnerEffect','previewWinnerSound'])$(id).disabled=locked;
     $('paletteSelect').disabled=locked;
@@ -1418,7 +1426,7 @@
       lastPower:details.power,lastTurns:details.turns,lastDurationMs:details.durationMs,
       lastCoast:config.coast,lastEasingExponent:details.easingExponent??null,
       lastMode:details.mode,lastPhysicsContacts:details.contacts??null,
-      lastPhysicalVelocity:details.velocity??null
+      lastPhysicalVelocity:details.velocity??null,lastRatchetStrength:details.ratchetStrength??null
     });
     currentPhysicalState=null;
   }
@@ -1429,7 +1437,7 @@
     const state=physics.create({
       angle:rotation,power,duration:config.duration,coast:config.coast,
       pointerIntensity:config.pointerIntensity,pointerSpring:config.pointerSpring,
-      subdivisions:config.subdivisions,geometry,random:rand
+      subdivisions:config.subdivisions,ratchetStrength:config.ratchetStrength,geometry,random:rand
     });
     currentPhysicalState=state;
     lastTickAt=0;
@@ -1440,7 +1448,7 @@
       completeSpin(winner,state.angle,{
         power,turns:Math.abs(state.angle-startAngle)/360,
         durationMs:state.elapsed*1000,mode:'physical',
-        contacts:state.contacts,velocity:state.velocity
+        contacts:state.contacts,velocity:state.velocity,ratchetStrength:state.ratchetStrength
       });
     }
     if(reduced){
