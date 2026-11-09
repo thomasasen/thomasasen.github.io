@@ -305,7 +305,7 @@
     if(isSpinning||id===profiles.activeId)return;
     const target=profiles.entries.find(p=>p.id===id);
     if(!target)return;
-    config=cloneConfig(target.config);profiles.activeId=id;rotation=0;wheel.style.transform='rotate(0deg)';
+    resetPointer();config=cloneConfig(target.config);profiles.activeId=id;rotation=0;wheel.style.transform='rotate(0deg)';
     clearWinnerHighlight();render();save();profileStatus();
   }
   let isSpinning=false, rotation=0, iconFontReady=false, currentIconTarget=null;
@@ -713,7 +713,7 @@
     $('addSegment').disabled=locked;
     $('spinDuration').disabled=locked;
     $('coastIntensity').disabled=locked;
-    for(const id of ['sizeMode','pointerSpring','pointerDamping','pointerIntensity','tickStyle','previewTick','profileSelect','profileNew','profileDuplicate','profileRename','profileDelete','profileExportAll','profileImportMode'])$(id).disabled=locked;
+    for(const id of ['sizeMode','pointerSpring','pointerDamping','pointerIntensity','tickStyle','previewTick','previewPointer','profileSelect','profileNew','profileDuplicate','profileRename','profileDelete','profileExportAll','profileImportMode'])$(id).disabled=locked;
     $('soundEnabled').disabled=locked;
     for(const id of ['winnerEffect','winnerStrength','winnerSound','previewWinnerEffect','previewWinnerSound'])$(id).disabled=locked;
     $('paletteSelect').disabled=locked;
@@ -1227,28 +1227,74 @@
       osc.start(now);osc.stop(now+duration+.005);
     }catch{/* Sound darf die Drehung nicht blockieren. */}
   }
-  // A damped spring driven by the actual sector-boundary contacts.
+  // Mechanical pointer: collisions transfer angular momentum to a hinged,
+  // damped spring. SVG rotation uses a fixed viewBox pivot (320, 19), never
+  // percentage-based transform origins that vary across browsers.
   let pointerAngle=0,pointerVelocity=0,pointerTime=0,pointerRaf=0;
+  let pointerContactCount=0,pointerMaxDeflection=0;
   const pointer=$('fixedPointer');
+  const POINTER_HINGE_X=320,POINTER_HINGE_Y=19;
+  function drawPointerAngle(angle){
+    pointerAngle=Math.max(-17,Math.min(17,angle));
+    // Negative rotation bends the tip right as the wheel spins clockwise.
+    pointer.setAttribute('transform',`rotate(${pointerAngle.toFixed(3)} ${POINTER_HINGE_X} ${POINTER_HINGE_Y})`);
+    pointerMaxDeflection=Math.max(pointerMaxDeflection,Math.abs(pointerAngle));
+  }
   function pointerImpulse(speed){
-    if(config.pointerIntensity<=0||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-    const strength=Math.max(.2,Math.min(1.4,2.2/(1+Math.abs(speed)/260)));
-    pointerVelocity+=Math.min(150,36*strength*(config.pointerIntensity/100));
-    if(!pointerRaf){pointerTime=performance.now();pointerRaf=requestAnimationFrame(pointerFrame);}
+    if(config.pointerIntensity<=0||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return false;
+    // Individual contacts are pronounced during the coast and smaller at speed.
+    // Multiple closely spaced impacts accumulate with a bounded velocity.
+    const velocity=Math.abs(speed);
+    const factor=.18+.82/(1+velocity/480);
+    const kick=440*(config.pointerIntensity/100)*factor;
+    pointerVelocity=Math.max(-360,Math.min(155,pointerVelocity-kick));
+    pointerContactCount++;
+    if(!pointerRaf){
+      pointerTime=performance.now();
+      pointerRaf=requestAnimationFrame(pointerFrame);
+    }
+    return true;
   }
   function pointerFrame(now){
-    const dt=Math.min(.035,(now-pointerTime)/1000);pointerTime=now;
-    const stiffness=50+config.pointerSpring*2.8;
-    const damping=5+config.pointerDamping*.24;
+    const dt=Math.min(.032,Math.max(0,(now-pointerTime)/1000));
+    pointerTime=now;
+    const stiffness=65+config.pointerSpring*1.7;
+    const damping=3.5+config.pointerDamping*.19;
+    // Semi-implicit Euler is stable for these bounded time steps and preserves
+    // natural overshoot, with all movement performed by a single rAF.
     pointerVelocity+=(-stiffness*pointerAngle-damping*pointerVelocity)*dt;
-    pointerAngle+=pointerVelocity*dt;
-    pointerAngle=Math.max(-18,Math.min(18,pointerAngle));
-    pointer.style.transform=`rotate(${pointerAngle.toFixed(3)}deg)`;
-    pointer.style.transformBox='fill-box';pointer.style.transformOrigin='50% 14%';
-    if(Math.abs(pointerAngle)<.025&&Math.abs(pointerVelocity)<.1){pointerAngle=0;pointerVelocity=0;pointer.style.transform='';pointerRaf=0;return;}
+    drawPointerAngle(pointerAngle+pointerVelocity*dt);
+    if(Math.abs(pointerAngle)<.025&&Math.abs(pointerVelocity)<.2){
+      drawPointerAngle(0);pointerVelocity=0;pointerRaf=0;return;
+    }
     pointerRaf=requestAnimationFrame(pointerFrame);
   }
-  function resetPointer(){cancelAnimationFrame(pointerRaf);pointerRaf=0;pointerAngle=0;pointerVelocity=0;pointer.style.transform='';}
+  function resetPointer(){
+    cancelAnimationFrame(pointerRaf);pointerRaf=0;
+    pointerAngle=0;pointerVelocity=0;
+    pointer.removeAttribute('transform');
+  }
+  // The controls are inside an off-canvas dialog whose backdrop normally blurs
+  // the wheel. Temporarily reveal the actual mechanical preview without hiding
+  // the editor or starting a draw.
+  let pointerPreviewTimer=0;
+  $('previewPointer').addEventListener('click',()=>{
+    if(isSpinning)return;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      toast('Zeigeranimation durch die Systemeinstellung für reduzierte Bewegung deaktiviert.');return;
+    }
+    if(config.pointerIntensity===0){
+      toast('Zeigerbewegung steht auf 0 %.');return;
+    }
+    clearTimeout(pointerPreviewTimer);
+    editorBackdrop.classList.add('is-pointer-preview');
+    pointerImpulse(85);
+    tick();
+    pointerPreviewTimer=setTimeout(()=>{
+      pointerPreviewTimer=0;
+      editorBackdrop.classList.remove('is-pointer-preview');
+    },1400);
+  });
   function currentIndex(angle,n){ const at=normalized(-90-angle);const rs=ranges();return rs.findIndex(s=>s.size>0&&normalized(at-s.start)<s.size-1e-8); }
   // The control changes when the wheel crosses its final segment boundary.
   // A high coast value deliberately leaves more angular distance late in the spin.
@@ -1297,6 +1343,7 @@
   let raf=0;
   function spin(){
     const n=config.segments.length;if(isSpinning||!n)return;
+    resetPointer();
     clearWinnerHighlight();
     const power=powerAt(performance.now());
     displayPower(power); // Capture at the actual click, not at the previous frame.
@@ -1326,7 +1373,15 @@
       const angle=from+delta*ease;
       wheel.style.transform=`rotate(${angle}deg)`;
       const sector=currentIndex(angle,n);
-      if(sector!==lastTickSector&&now-lastTickAt>28){const speed=(angle-lastAngle)/Math.max(.001,(now-lastFrameTime)/1000);lastTickSector=sector;lastTickAt=now;tick();pointerImpulse(speed);}
+      if(sector>=0&&sector!==lastTickSector){
+        lastTickSector=sector;
+        // Throttle both sound and pointer impulse together, never independently.
+        if(now-lastTickAt>=38){
+          const speed=(angle-lastAngle)/Math.max(.001,(now-lastFrameTime)/1000);
+          lastTickAt=now;
+          tick();pointerImpulse(speed);
+        }
+      }
       lastAngle=angle;lastFrameTime=now;
       if(t<1){raf=requestAnimationFrame(frame);return;}
       rotation=finish;wheel.style.transform=`rotate(${rotation}deg)`;
@@ -1343,7 +1398,7 @@
     raf=requestAnimationFrame(frame);
   }
   $('spinHub').addEventListener('click',spin);
-  window.__casinoNoirDebug={selectWinner, ranges, get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
+  window.__casinoNoirDebug={selectWinner, ranges,get pointerAngle(){return pointerAngle;},get pointerContactCount(){return pointerContactCount;},get pointerMaxDeflection(){return pointerMaxDeflection;}, get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
   restoreIconCatalog();
   render();
   loadIconCatalog();
