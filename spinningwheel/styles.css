@@ -45,6 +45,9 @@
 .editor-backdrop{position:fixed;inset:0;z-index:45;background:rgba(7,4,7,.68);backdrop-filter:blur(3px);transition:none!important}
 /* Temporarily reveal the wheel during a winner preview; the editor stays visible. */
 .editor-backdrop.is-effect-preview{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
+.editor-backdrop.is-pointer-preview{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
+.pointer-preview-control{margin:7px 0 9px;min-height:42px;border-color:#a77a53;color:#f7dfb7}
+.pointer-preview-control:focus-visible{outline:2px solid #ffddaa;outline-offset:2px}
 .editor-panel{position:fixed;z-index:46;inset:0 0 0 auto;width:min(520px,100vw);height:100dvh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:0;border-block:0;border-right:0;scrollbar-color:#79515d #20151b}
 .editor-panel .segment-list{max-height:none;overflow:visible}
 .editor-header{padding-right:70px}
