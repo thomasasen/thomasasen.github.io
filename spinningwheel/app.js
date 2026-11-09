@@ -8,6 +8,9 @@
   const WINNER_EFFECTS = ['outline','spotlight','lift','lights','celebration','cinematic'];
   const WINNER_STRENGTHS = ['subtle','refined','show'];
   const WINNER_SOUNDS = ['off','soft','bell','chime','jackpot','fanfare'];
+  const MECHANICAL_SOUNDS = ['subtle','ratchet','metal','casino'];
+  const WORKSPACE_KEY = 'casino-noir-wheel-studio-workspace-v2';
+  const MAX_WEIGHT = 1000000;
   const PALETTES = {
     noir: ['#981439', '#181318'],
     ruby: ['#b7193d', '#2b1319'],
@@ -218,34 +221,136 @@
       ['Nochmal','refresh',true,true],
       ['Glücksgriff','favorite',false,true]
     ];
-    return data.map((v,i) => ({ id:makeId(), label:v[0], icon:v[1], showLabel:v[2], showIcon:v[3], color:PALETTES.noir[i%2] }));
+    return data.map((v,i) => ({id:makeId(),label:v[0],icon:v[1],showLabel:v[2],showIcon:v[3],color:PALETTES.noir[i%2],weight:1}));
   }
-  function defaultConfig() { return {version:1, segments:initialSegments(), duration:6, coast:65, sound:true, winnerEffect:'cinematic', winnerStrength:'refined', winnerSound:'chime', palette:'noir'}; }
-  function validColor(v) { return /^#[0-9a-f]{6}$/i.test(v || ''); }
-  function validIcon(v) { return isValidMaterialSymbolName(v); }
-  function saneConfig(raw) {
-    if (!raw || !Array.isArray(raw.segments)) throw new Error('Die JSON-Datei enthält keine Segmentliste.');
-    if (raw.segments.length > 5000) throw new Error('Mehr als 5.000 Segmente können nicht auf einmal importiert werden.');
-    const palette = PALETTES[raw.palette] ? raw.palette : 'noir';
+  function defaultConfig(){return {version:2,segments:initialSegments(),duration:6,coast:65,sound:true,winnerEffect:'cinematic',winnerStrength:'refined',winnerSound:'chime',palette:'noir',proportional:false,pointerSpring:55,pointerDamping:62,pointerIntensity:60,mechanicalSound:'casino'};}
+  function validColor(v){return typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);}
+  function validIcon(v){return isValidMaterialSymbolName(v);}
+  function validWeight(v){return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=MAX_WEIGHT;}
+  function clampSetting(v,fallback){return Number.isFinite(Number(v))?Math.max(0,Math.min(100,Math.round(Number(v)))):fallback;}
+  function saneConfig(raw,{strict=false}={}){
+    if(!raw||typeof raw!=='object'||Array.isArray(raw)||!Array.isArray(raw.segments))throw Error('Die JSON-Datei enthält keine gültige Segmentliste.');
+    if(raw.version!==undefined&&(!Number.isInteger(raw.version)||raw.version<1||raw.version>2))throw Error('Unbekannte Konfigurationsversion.');
+    if(raw.segments.length>5000)throw Error('Maximal 5.000 Segmente je Glücksrad.');
+    const palette=Object.hasOwn(PALETTES,raw.palette)?raw.palette:'noir';
+    const controls=['coast','pointerSpring','pointerDamping','pointerIntensity'];
+    if(strict&&raw.version===2){
+      if(raw.duration!==undefined&&(!Number.isFinite(raw.duration)||raw.duration<3||raw.duration>30))throw Error('Ungültige Drehdauer.');
+      for(const key of controls)if(raw[key]!==undefined&&(!Number.isFinite(raw[key])||raw[key]<0||raw[key]>100))throw Error('Ungültiger Wert für '+key+'.');
+      if(raw.proportional!==undefined&&typeof raw.proportional!=='boolean')throw Error('Ungültiger Darstellungsmodus.');
+    }
+    const seen=new Set();
     return {
-      version:1, palette,
-      duration: Number.isFinite(Number(raw.duration)) ? Math.min(30,Math.max(3,Math.round(Number(raw.duration)))) : 6,
-      coast: Number.isFinite(Number(raw.coast)) ? Math.min(100,Math.max(0,Math.round(Number(raw.coast)))) : 65,
-      sound:raw.sound !== false,
-      winnerEffect: WINNER_EFFECTS.includes(raw.winnerEffect) ? raw.winnerEffect : 'cinematic',
-      winnerStrength: WINNER_STRENGTHS.includes(raw.winnerStrength) ? raw.winnerStrength : 'refined',
-      winnerSound: WINNER_SOUNDS.includes(raw.winnerSound) ? raw.winnerSound : 'chime',
-      segments:raw.segments.map((s,i) => ({
-        id:makeId(), label: String(s?.label ?? '').slice(0,80),
-        icon:validIcon(normalizeIconName(s?.icon)) ? normalizeIconName(s.icon) : 'star',
-        showLabel:s?.showLabel !== false, showIcon:s?.showIcon !== false,
-        color:validColor(s?.color) ? s.color : PALETTES[palette][i%2]
-      }))
+      version:2,palette,
+      duration:Number.isFinite(Number(raw.duration))?Math.max(3,Math.min(30,Math.round(Number(raw.duration)))):6,
+      coast:clampSetting(raw.coast,65),sound:raw.sound!==false,
+      winnerEffect:WINNER_EFFECTS.includes(raw.winnerEffect)?raw.winnerEffect:'cinematic',
+      winnerStrength:WINNER_STRENGTHS.includes(raw.winnerStrength)?raw.winnerStrength:'refined',
+      winnerSound:WINNER_SOUNDS.includes(raw.winnerSound)?raw.winnerSound:'chime',
+      proportional:raw.proportional===true,
+      pointerSpring:clampSetting(raw.pointerSpring,55),
+      pointerDamping:clampSetting(raw.pointerDamping,62),
+      pointerIntensity:clampSetting(raw.pointerIntensity,60),
+      mechanicalSound:MECHANICAL_SOUNDS.includes(raw.mechanicalSound)?raw.mechanicalSound:'casino',
+      segments:raw.segments.map((entry,i)=>{
+        if(!entry||typeof entry!=='object'||Array.isArray(entry))throw Error('Ungültiges Segment '+(i+1)+'.');
+        if(strict&&entry.weight!==undefined&&!validWeight(entry.weight))throw Error('Ungültiges Gewicht in Segment '+(i+1)+'.');
+        const weight=entry.weight===undefined?1:Number(entry.weight);
+        if(!validWeight(weight))throw Error('Ungültiges Gewicht in Segment '+(i+1)+'.');
+        const normalizedName=normalizeIconName(entry.icon);
+        let id=typeof entry.id==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(entry.id)?entry.id:makeId();
+        if(seen.has(id))id=makeId();
+        seen.add(id);
+        return {id,label:String(entry.label??'').slice(0,80),icon:validIcon(normalizedName)?normalizedName:'star',
+          showLabel:entry.showLabel!==false,showIcon:entry.showIcon!==false,
+          color:validColor(entry.color)?entry.color:PALETTES[palette][i%2],weight};
+      })
     };
   }
-  let config;
-  try { const saved=localStorage.getItem(STORAGE_KEY); config=saved?saneConfig(JSON.parse(saved)):defaultConfig(); }
-  catch { config=defaultConfig(); }
+  function profileId(){return globalThis.crypto?.randomUUID?.() || makeId();}
+  function profileName(raw){return String(raw??'').trim().slice(0,60)||'Neues Glücksrad';}
+  function makeProfile(name,settings,id=profileId()){return {id,name:profileName(name),config:settings};}
+  function loadWorkspace(){
+    try{
+      const saved=localStorage.getItem(WORKSPACE_KEY);
+      if(saved){
+        const value=JSON.parse(saved);
+        if(value?.version!==2||!Array.isArray(value.items)||!value.items.length||value.items.length>100)throw Error('Ungültiges gespeichertes Profilformat');
+        const ids=new Set();
+        const items=value.items.map(item=>{
+          const id=typeof item.id==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(item.id)&&!ids.has(item.id)?item.id:profileId();
+          ids.add(id);
+          return makeProfile(item.name,saneConfig(item.config),id);
+        });
+        return {version:2,activeId:ids.has(value.activeId)?value.activeId:items[0].id,items};
+      }
+    }catch(error){console.warn('Profilverwaltung wird aus dem bisherigen Speicher wiederhergestellt:',error);}
+    let legacy;
+    try{const value=localStorage.getItem(STORAGE_KEY);legacy=value?saneConfig(JSON.parse(value)):defaultConfig();}
+    catch(error){console.warn('Bisherige lokale Konfiguration ungültig:',error);legacy=defaultConfig();}
+    const first=makeProfile('Mein Glücksrad',legacy);
+    return {version:2,activeId:first.id,items:[first]};
+  }
+  let workspace=loadWorkspace();
+  let config=workspace.items.find(item=>item.id===workspace.activeId).config;
+  function profile(){return workspace.items.find(item=>item.id===workspace.activeId);}
+  function activeWeightTotal(){return config.segments.reduce((sum,segment)=>sum+segment.weight,0);}
+  function hasEligibleSegments(){return activeWeightTotal()>0;}
+  // All geometry derives from one layout in degrees measured clockwise from 12 o'clock.
+  // Zero-weight segments are invisible in proportional mode but remain editable.
+  function segmentLayout(){
+    const n=config.segments.length,total=activeWeightTotal();
+    if(!n)return [];
+    const firstSpan=config.proportional&&total>0?360*config.segments[0].weight/total:360/n;
+    let cursor=0;
+    return config.segments.map((segment,i)=>{
+      const span=config.proportional&&total>0?360*segment.weight/total:360/n;
+      const start=cursor;
+      cursor=i===n-1?360:cursor+span;
+      const end=cursor;
+      return {start,end,span:end-start,center:-90+(start+end)/2-firstSpan/2,index:i};
+    });
+  }
+  function selectedAtRotation(angle,layout=segmentLayout()){
+    if(!layout.length)return -1;
+    const pointerAngle=normalized(-angle+(layout[0].span/2));
+    let lo=0,hi=layout.length-1;
+    while(lo<hi){const mid=(lo+hi)>>1;if(pointerAngle>=layout[mid].end)lo=mid+1;else hi=mid;}
+    // With a zero-width wedge, never report a sector that has no visible area.
+    if(layout[lo].span<1e-10)return layout.findIndex(item=>item.span>1e-10);
+    return lo;
+  }
+  function drawWeightedWinner(){
+    const total=activeWeightTotal();
+    if(!(total>0))throw Error('Kein Segment ist gewinnberechtigt.');
+    if(!globalThis.crypto?.getRandomValues)throw Error('Sicherer Zufall ist in diesem Browser nicht verfügbar.');
+    const values=new Uint32Array(2);crypto.getRandomValues(values);
+    const r=(values[0]*2097152+(values[1]>>>11))/9007199254740992;
+    const target=r*total;
+    let lo=0,hi=config.segments.length-1;
+    // prefix sums: binary search, not dependent on segment position or spin force.
+    const prefix=[];let running=0;
+    for(const segment of config.segments){running+=segment.weight;prefix.push(running);}
+    while(lo<hi){const mid=(lo+hi)>>1;if(target<prefix[mid])hi=mid;else lo=mid+1;}
+    return lo;
+  }
+  function storageStatus(ok){
+    saveOk=ok;
+    $('saveIndicator').textContent=ok?'● Lokal gespeichert':'⚠ Speicherung nicht möglich';
+    $('saveIndicator').style.color=ok?'':'#ffb4a0';
+    const inner=$('profileSaveStatus');if(inner){inner.textContent=ok?'● Alle Änderungen lokal gespeichert':'⚠ Änderungen konnten nicht gespeichert werden. Bitte JSON exportieren.';inner.classList.toggle('is-warning',!ok);}
+  }
+  function persist(next=workspace){
+    try{
+      const serialized=JSON.stringify(next);
+      localStorage.setItem(WORKSPACE_KEY,serialized);
+      // Retain the original single-wheel key as a backwards-compatible backup.
+      // The workspace key is the canonical source when both keys exist.
+      try{localStorage.setItem(STORAGE_KEY,JSON.stringify(next.items.find(x=>x.id===next.activeId).config));}catch(error){console.warn('Legacy-Backup nicht aktualisiert:',error);}
+      storageStatus(true);
+      return true;
+    }catch(error){console.warn('Lokaler Speicher ist blockiert oder voll:',error);storageStatus(false);return false;}
+  }
   let isSpinning=false, rotation=0, iconFontReady=false, currentIconTarget=null;
   let highlightedWinner=null;
   let activeCategory='Alle', lastFocusedElement=null, saveOk=true, audioContext=null, lastTickAt=0, lastTickSector=-1, toastTimer=0;
@@ -295,7 +400,7 @@
     return node;
   }
   function polar(r,angle){const a=angle*Math.PI/180;return [320+Math.cos(a)*r,320+Math.sin(a)*r];}
-  function wedgePath(start,end,r){const p=polar(r,start),q=polar(r,end);return `M 320 320 L ${p[0].toFixed(4)} ${p[1].toFixed(4)} A ${r} ${r} 0 ${end-start>180?1:0} 1 ${q[0].toFixed(4)} ${q[1].toFixed(4)} Z`;}
+  function wedgePath(start,end,r){if(end-start>=359.999999)return circlePath(320,320,r);const p=polar(r,start),q=polar(r,end);return `M 320 320 L ${p[0].toFixed(4)} ${p[1].toFixed(4)} A ${r} ${r} 0 ${end-start>180?1:0} 1 ${q[0].toFixed(4)} ${q[1].toFixed(4)} Z`;}
   // A real vector fallback for the key "shirt" alias (official name: apparel),
   // even if Google Fonts is blocked. Never show a raw ligature name as a glyph.
   const SHIRT_PATH='M8 3.5 10 5.2 Q12 7 14 5.2 L16 3.5 L21 6.3 L19 11 L16.5 9.7 L16.5 21 H7.5 V9.7 L5 11 L3 6.3 Z';
@@ -333,10 +438,12 @@
     highlightedWinner=index;
     group.classList.remove('is-visible');
     group.replaceChildren();
+    // Real overlay geometry is grouped as one semantic highlight surface.
+    const surface=e('g',{class:'winner-highlight-surface'},group);
     wheel.querySelectorAll('.winner-item-lifted').forEach(node=>node.classList.remove('winner-item-lifted'));
     stage.hidden=true;
     stage.classList.remove('is-visible');
-    const step=360/n,center=-90+index*step;
+    const sector=segmentLayout()[index],step=sector.span,center=sector.center;
     const effect=config.winnerEffect,strength=config.winnerStrength;
     const mult={subtle:.72,refined:1,show:1.33}[strength]||1;
     const dim={subtle:.40,refined:.62,show:.76}[strength]||.62;
@@ -344,25 +451,25 @@
     group.dataset.strength=strength;
     group.style.setProperty('--winner-dim',String(dim));
     group.style.setProperty('--winner-stroke',String(2.5*mult));
-    const sectorPath=r=>n===1?circlePath(320,320,r):wedgePath(center-step/2,center+step/2,r);
+    const sectorPath=r=>step>=359.999999?circlePath(320,320,r):wedgePath(center-step/2,center+step/2,r);
     const [winnerX,winnerY]=polar(188,center);
     // Shared subtle marker is deliberately omitted: modes must look different.
     if(effect==='outline'){
-      const under=e('path',{d:sectorPath(263),class:'winner-outline-rest'},group);
-      const trace=e('path',{d:sectorPath(263),class:'winner-outline-trace'},group);
+      const under=e('path',{d:sectorPath(263),class:'winner-outline-rest'},surface);
+      const trace=e('path',{d:sectorPath(263),class:'winner-outline-trace'},surface);
       const length=Math.ceil(trace.getTotalLength());
       trace.style.strokeDasharray=`${length} ${length}`;
       trace.style.setProperty('--trace-length',String(length));
       const [p1x,p1y]=polar(260,center-step/2),[p2x,p2y]=polar(260,center+step/2);
-      for(const [x,y] of [[p1x,p1y],[p2x,p2y]])e('circle',{cx:x,cy:y,r:4*mult,class:'winner-outline-jewel'},group);
+      for(const [x,y] of [[p1x,p1y],[p2x,p2y]])e('circle',{cx:x,cy:y,r:4*mult,class:'winner-outline-jewel'},surface);
     }else if(effect==='spotlight'){
-      shadeOtherSectors(group,index,n,step,dim);
-      makeSpotBeam(group,sectorPath,center,mult);
+      shadeOtherSectors(surface,index,n,step,dim);
+      makeSpotBeam(surface,sectorPath,center,mult);
     }else if(effect==='lift'){
       const offset=17*mult,rad=center*Math.PI/180;
       const dx=Math.cos(rad)*offset,dy=Math.sin(rad)*offset;
-      e('path',{d:sectorPath(261),class:'winner-lift-groove'},group);
-      const lift=e('g',{class:'winner-lift',transform:`translate(${dx.toFixed(2)} ${dy.toFixed(2)})`},group);
+      e('path',{d:sectorPath(261),class:'winner-lift-groove'},surface);
+      const lift=e('g',{class:'winner-lift',transform:`translate(${dx.toFixed(2)} ${dy.toFixed(2)})`},surface);
       const moving=e('g',{class:'winner-lift-motion'},lift);
       moving.style.setProperty('--lift-x',`${-dx.toFixed(2)}px`);
       moving.style.setProperty('--lift-y',`${-dy.toFixed(2)}px`);
@@ -372,25 +479,25 @@
       if(original){moving.appendChild(original.cloneNode(true));original.classList.add('winner-item-lifted');}
       e('path',{d:sectorPath(259),class:'winner-lift-shimmer'},moving);
     }else if(effect==='lights'){
-      makeMarquee(group,index,n,step,mult);
-      e('path',{d:sectorPath(260),class:'winner-lights-wedge'},group);
+      makeMarquee(surface,index,n,step,mult);
+      e('path',{d:sectorPath(260),class:'winner-lights-wedge'},surface);
     }else if(effect==='celebration'){
       // Keep the winner visually selected once the fireworks have faded.
-      e('path',{d:sectorPath(263),class:'winner-celebration-lacquer'},group);
-      makeFireworks(group,center,step,mult);
-      const halo=e('circle',{cx:winnerX,cy:winnerY,r:24,class:'winner-burst-halo'},group);
+      e('path',{d:sectorPath(263),class:'winner-celebration-lacquer'},surface);
+      makeFireworks(surface,center,step,mult);
+      const halo=e('circle',{cx:winnerX,cy:winnerY,r:24,class:'winner-burst-halo'},surface);
       halo.style.setProperty('--halo-scale',String(2.8*mult));
     }else if(effect==='cinematic'){
-      shadeOtherSectors(group,index,n,step,dim*.80);
-      makeSpotBeam(group,sectorPath,center,mult);
-      makeMarquee(group,index,n,step,mult);
-      const rings=e('g',{class:'winner-cinema-rings'},group);
+      shadeOtherSectors(surface,index,n,step,dim*.80);
+      makeSpotBeam(surface,sectorPath,center,mult);
+      makeMarquee(surface,index,n,step,mult);
+      const rings=e('g',{class:'winner-cinema-rings'},surface);
       for(let j=0;j<3;j++){
         const ring=e('circle',{cx:winnerX,cy:winnerY,r:13+j*14,class:'winner-cinema-ring'},rings);
         ring.style.animationDelay=`${j*260}ms`;
       }
-      e('path',{d:sectorPath(263),class:'winner-cinema-gold'},group);
-      e('circle',{cx:320,cy:320,r:279,class:'winner-cinema-orbit'},group);
+      e('path',{d:sectorPath(263),class:'winner-cinema-gold'},surface);
+      e('circle',{cx:320,cy:320,r:279,class:'winner-cinema-orbit'},surface);
     }
     const names={outline:'GOLDEN EDGE',spotlight:'CASINO SPOTLIGHT',lift:'GOLDEN LIFT',lights:'JACKPOT LIGHTS',celebration:'GOLDEN CELEBRATION',cinematic:'CASINO CINEMATIC'};
     stage.dataset.effect=effect;
@@ -406,18 +513,17 @@
   }
   function circlePath(cx,cy,r){return `M ${cx-r} ${cy} a ${r} ${r} 0 1 0 ${2*r} 0 a ${r} ${r} 0 1 0 ${-2*r} 0 Z`;}
   function shadeOtherSectors(group,index,n,step,dim){
-    if(n===1)return;
+    const layout=segmentLayout();
+    if(layout[index]?.span>=359.999999)return;
     const shade=e('g',{class:'winner-shade','clip-path':'url(#faceClip)'},group);
     shade.style.setProperty('--winner-dim',String(dim));
     if(n>100){
-      const disk=circlePath(320,320,265);
-      e('path',{d:disk+' '+wedgePath(-90+(index-.5)*step,-90+(index+.5)*step,265),'fill-rule':'evenodd',class:'winner-shade-sector'},shade);
+      const sector=layout[index],disk=circlePath(320,320,265);
+      e('path',{d:disk+' '+wedgePath(sector.center-sector.span/2,sector.center+sector.span/2,265),'fill-rule':'evenodd',class:'winner-shade-sector'},shade);
     }else{
-      for(let j=0;j<n;j++){
-        if(j===index)continue;
-        const mid=-90+j*step;
-        e('path',{d:wedgePath(mid-step/2,mid+step/2,265),class:'winner-shade-sector'},shade);
-      }
+      layout.forEach((sector,i)=>{
+        if(i!==index&&sector.span>0)e('path',{d:wedgePath(sector.center-sector.span/2,sector.center+sector.span/2,265),class:'winner-shade-sector'},shade);
+      });
     }
   }
   function makeSpotBeam(group,sectorPath,center,mult){
@@ -437,7 +543,7 @@
   function makeMarquee(group,index,n,step,mult){
     const ring=e('g',{class:'winner-marquee'},group);
     e('circle',{cx:320,cy:320,r:291,class:'winner-marquee-orbit'},ring);
-    const center=-90+index*step;
+    const center=segmentLayout()[index].center;
     const distance=(a,b)=>Math.abs((((a-b)%360)+540)%360-180);
     let closest=0,smallest=Infinity;
     for(let j=0;j<56;j++){
@@ -474,7 +580,7 @@
     e('circle',{cx,cy,r:12,class:'winner-firework-wave'},bursts);
   }
   function drawWheel(){
-    const n=config.segments.length;
+    const n=config.segments.length,layout=segmentLayout(),weightTotal=activeWeightTotal();
     wheel.replaceChildren();
     // Metallischer Rahmen und konzentrisch gefasste Ringe – vollständig skalierbares SVG.
     e('circle',{cx:320,cy:320,r:304,fill:'#271510',stroke:'#8c4e24','stroke-width':2},wheel);
@@ -488,11 +594,10 @@
       const t=e('text',{x:320,y:175,'text-anchor':'middle',fill:'#ebbf83','font-size':23,'font-family':'Georgia, serif'},wheelSurface);
       t.textContent='Segmente hinzufügen';
     } else {
-      const step=360/n;
       config.segments.forEach((s,i)=>{
-        const center=-90+i*step;
-        const path=n===1?e('circle',{cx:320,cy:320,r:267,fill:s.color},wheelSurface):e('path',{d:wedgePath(center-step/2,center+step/2,267),fill:s.color,stroke:'#c69456','stroke-width':n>72?.6:n>26?1:1.9,'stroke-linejoin':'round'},wheelSurface);
-        path.appendChild(e('title',{},null)); path.lastChild.textContent=`Segment ${i+1}: ${safeText(s.label)}${s.showIcon?' · '+s.icon:''}`;
+        const sector=layout[i];if(sector.span<1e-10||(config.proportional&&s.weight===0))return;
+        const path=sector.span>=359.999999?e('circle',{cx:320,cy:320,r:267,fill:s.color},wheelSurface):e('path',{d:wedgePath(sector.center-sector.span/2,sector.center+sector.span/2,267),fill:s.color,'fill-opacity':s.weight===0&&weightTotal>0&&!config.proportional?.25:1,stroke:'#c69456','stroke-width':n>72?.6:n>26?1:1.9,'stroke-linejoin':'round'},wheelSurface);
+        path.appendChild(e('title',{},null));path.lastChild.textContent=`Segment ${i+1}: ${safeText(s.label)} · ${(100*s.weight/(weightTotal||1)).toFixed(2)} %`;
       });
     }
     e('circle',{cx:320,cy:320,r:267,fill:'url(#faceShine)','pointer-events':'none'},wheel);
@@ -506,15 +611,14 @@
       e('circle',{cx:x-1.1,cy:y-1.6,r:1.25,fill:'#fff9d8',opacity:.8},wheel);
     }
     if(n){
-      const step=360/n;
       config.segments.forEach((s,i)=>{
-        const center=-90+i*step;
-        if(n>72) return;
+        const sector=layout[i],center=sector.center,step=sector.span;
+        if(n>72||step<3) return;
         if(n>20){
           const [x,y]=polar(220,center);
           // Beschriftungen folgen der Segmentachse. Sobald das Segment unter
           // dem Zeiger bei 12 Uhr steht, erscheint die Nummer aufrecht.
-          const labelGroup=e('g',{'data-wheel-item':i,transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${(i*step).toFixed(5)})`},wheel);
+          const labelGroup=e('g',{'data-wheel-item':i,transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${(center+90).toFixed(5)})`},wheel);
           const t=e('text',{x:0,y:0,'text-anchor':'middle','dominant-baseline':'central',class:'face-number','font-size':n>52?8:n>36?10:12},labelGroup);
           t.textContent=String(i+1);return;
         }
@@ -530,7 +634,7 @@
         // UND Icon beim Erreichen der 12-Uhr-Position immer waagerecht und
         // aufrecht. Eine 180°-Korrektur auf der unteren Radhälfte würde sie
         // nach dem Drehen kopfüber erscheinen lassen.
-        const tilt=i*step;
+        const tilt=center+90;
         const content=e('g',{'data-wheel-item':i,transform:`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${tilt.toFixed(5)})`},wheel);
         const title=e('title',{},content);title.textContent=safeText(s.label);
         const both=s.showLabel&&s.showIcon;
@@ -556,8 +660,9 @@
     e('circle',{cx:320,cy:320,r:47,fill:'#1d1013',stroke:'#6b3e20','stroke-width':1.2},wheel);
     wheel.style.transform=`rotate(${rotation}deg)`;
     $('segmentCount').textContent=n.toLocaleString('de-DE');
-    $('stageCount').textContent=String(n).padStart(2,'0')+' SEGMENTE';
-    $('spinHub').disabled=isSpinning||n===0;
+    $('stageCount').textContent=String(n).padStart(2,'0')+' SEGMENTE'+(config.proportional?' · PROPORTIONAL':config.segments.some(s=>s.weight!==config.segments[0]?.weight)?' · GEWICHTETE CHANCEN':'');
+    $('spinHub').disabled=isSpinning||!hasEligibleSegments();
+    const summary=$('probabilitySummary');if(summary){const count=config.segments.filter(item=>item.weight>0).length;summary.textContent=count?`${count} von ${n} Segmenten gewinnberechtigt · Summe der Gewichte: ${activeWeightTotal().toLocaleString('de-DE')}`:'Keine Ziehung möglich: Alle Gewichte sind 0.';summary.classList.toggle('is-warning',!count);}
     const notice=$('densityNotice');
     if(n>72)notice.textContent='Bei mehr als 72 Segmenten zeigt das Rad nur die Farbsegmente. Inhalte bleiben in der Liste und im Ergebnis erhalten.';
     else if(n>20)notice.textContent='Ab 21 Segmenten verwendet das Rad Nummern statt Symbolen und Text, um das Design lesbar zu halten.';
@@ -571,7 +676,7 @@
     return `<span class="symbol-fallback" aria-hidden="true">${escapeHtml(iconFallback(icon))}</span>`;
   }
   function renderSegments(){
-    const list=$('segmentList');
+    const list=$('segmentList'),weightTotal=activeWeightTotal();
     if(!config.segments.length){list.innerHTML='<div class="stage-notice">Noch keine Segmente. Mit „Hinzufügen“ beginnt dein neues Rad.</div>';return;}
     list.innerHTML=config.segments.map((s,i)=>`<div class="segment-card" data-id="${escapeHtml(s.id)}">
       <div class="segment-top">
@@ -584,6 +689,8 @@
       <div class="segment-controls">
         <label class="pill-check"><input type="checkbox" data-field="showLabel" ${s.showLabel?'checked':''}><span>Text</span></label>
         <label class="pill-check"><input type="checkbox" data-field="showIcon" ${s.showIcon?'checked':''}><span>Symbol</span></label>
+        <label class="weight-control" title="Gewicht 0 bedeutet: kann nicht gewinnen"><span>Gewicht</span><input type="number" min="0" max="1000000" step="any" inputmode="decimal" data-field="weight" aria-label="Gewicht für Segment ${i+1}" value="${s.weight}"></label>
+        <output class="segment-chance${s.weight===0?' is-excluded':''}" aria-label="Gewinnchance Segment ${i+1}">${weightTotal>0?(100*s.weight/weightTotal).toLocaleString('de-DE',{maximumFractionDigits:2}):'0'} %</output>
         <span class="spacer"></span>
         <button class="icon-action" type="button" data-action="up" aria-label="Segment ${i+1} nach oben" title="Nach oben" ${i===0?'disabled':''}>↑</button>
         <button class="icon-action" type="button" data-action="down" aria-label="Segment ${i+1} nach unten" title="Nach unten" ${i===config.segments.length-1?'disabled':''}>↓</button>
@@ -592,12 +699,19 @@
     </div>`).join('');
     if(isSpinning) lockEditor(true);
   }
-  function renderSettings(){ $('spinDuration').value=config.duration; $('durationLabel').textContent=config.duration+' s'; $('coastIntensity').value=config.coast; $('coastLabel').textContent=config.coast+' %'; $('soundEnabled').checked=config.sound; $('winnerEffect').value=config.winnerEffect; $('winnerStrength').value=config.winnerStrength; $('winnerSound').value=config.winnerSound; $('paletteSelect').value=config.palette; }
-  function render(){drawWheel();renderSegments();renderSettings();}
-  function save(){
-    try {localStorage.setItem(STORAGE_KEY,JSON.stringify(config));saveOk=true;$('saveIndicator').textContent='● Lokal gespeichert';$('saveIndicator').style.color='';}
-    catch {saveOk=false;$('saveIndicator').textContent='⚠ Speicherung nicht möglich';$('saveIndicator').style.color='#ffb4a0';}
+  function renderSettings(){
+    $('spinDuration').value=config.duration;$('durationLabel').textContent=config.duration+' s';
+    $('coastIntensity').value=config.coast;$('coastLabel').textContent=config.coast+' %';
+    $('soundEnabled').checked=config.sound;$('winnerEffect').value=config.winnerEffect;
+    $('winnerStrength').value=config.winnerStrength;$('winnerSound').value=config.winnerSound;
+    $('paletteSelect').value=config.palette;$('proportionalMode').value=config.proportional?'proportional':'equal';
+    for(const key of ['pointerSpring','pointerDamping','pointerIntensity']){$(key).value=config[key];$(key+'Label').textContent=config[key]+' %';}
+    $('mechanicalSound').value=config.mechanicalSound;
+    $('importMode').value='replace';
+    renderProfiles();
   }
+  function render(){drawWheel();renderSegments();renderSettings();}
+  function save(){profile().config=config;return persist();}
   function mutate(){clearWinnerHighlight();drawWheel();save();}
   function toast(message){const n=$('toast');n.textContent=message;n.classList.add('is-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.classList.remove('is-visible'),2700);}
   function lockEditor(locked){
@@ -610,6 +724,7 @@
     $('importJson').disabled=locked;
     $('resetConfig').disabled=locked;
     $('importFile').disabled=locked;
+    for(const id of ['proportionalMode','pointerSpring','pointerDamping','pointerIntensity','mechanicalSound','previewMechanicalSound','profilePicker','profileName','newProfile','saveProfile','duplicateProfile','renameProfile','deleteProfile','importMode','exportJson','exportAllJson'])$(id).disabled=locked;
     $('segmentList').querySelectorAll('button,input').forEach(el=>{
       if(!locked && el.dataset.field==='label'){
         const s=config.segments.find(x=>x.id===el.closest('.segment-card')?.dataset.id);
@@ -620,19 +735,37 @@
         el.disabled=config.segments.at(-1)?.id===el.closest('.segment-card')?.dataset.id;
       } else el.disabled=locked;
     });
+    if(!locked)$('deleteProfile').disabled=workspace.items.length<=1;
   }
   const list=$('segmentList');
   list.addEventListener('input',ev=>{
     if(isSpinning)return;
     const el=ev.target,field=el.dataset.field;
-    if(field!=='label'&&field!=='color')return;
+    if(field!=='label'&&field!=='color'&&field!=='weight')return;
     const s=config.segments.find(x=>x.id===el.closest('.segment-card')?.dataset.id);if(!s)return;
     if(field==='color'&&!validColor(el.value))return;
+    if(field==='weight'){
+      if(el.value.trim()===''||!Number.isFinite(el.valueAsNumber)||el.valueAsNumber<0||el.valueAsNumber>MAX_WEIGHT)return;
+      s.weight=el.valueAsNumber;
+      // Update odds without recreating the focused number input.
+      const total=activeWeightTotal();
+      list.querySelectorAll('.segment-card').forEach(card=>{
+        const item=config.segments.find(x=>x.id===card.dataset.id),out=card.querySelector('.segment-chance');
+        out.textContent=(total>0?100*item.weight/total:0).toLocaleString('de-DE',{maximumFractionDigits:2})+' %';
+        out.classList.toggle('is-excluded',item.weight===0);
+      });
+      mutate();return;
+    }
     s[field]=el.value;mutate();
   });
   list.addEventListener('change',ev=>{
     if(isSpinning)return;
     const el=ev.target,field=el.dataset.field;
+    if(field==='weight'){
+      const card=el.closest('.segment-card'),segment=config.segments.find(x=>x.id===card?.dataset.id);
+      if(segment)el.value=String(segment.weight);
+      return;
+    }
     if(field!=='showLabel'&&field!=='showIcon')return;
     const s=config.segments.find(x=>x.id===el.closest('.segment-card')?.dataset.id);if(!s)return;
     s[field]=el.checked;renderSegments();mutate();
@@ -825,11 +958,15 @@
   $('addSegment').addEventListener('click',()=>{
     if(isSpinning)return;
     const n=config.segments.length;
-    config.segments.push({id:makeId(),label:`Segment ${n+1}`,icon:'star',showLabel:true,showIcon:true,color:PALETTES[config.palette][n%2]});
+    config.segments.push({id:makeId(),label:`Segment ${n+1}`,icon:'star',showLabel:true,showIcon:true,color:PALETTES[config.palette][n%2],weight:1});
     renderSegments();mutate();list.scrollTop=list.scrollHeight;
   });
   $('spinDuration').addEventListener('input',ev=>{config.duration=Number(ev.target.value);$('durationLabel').textContent=config.duration+' s';save();});
   $('coastIntensity').addEventListener('input',ev=>{config.coast=Number(ev.target.value);$('coastLabel').textContent=config.coast+' %';save();});
+  $('proportionalMode').addEventListener('change',ev=>{if(isSpinning)return;config.proportional=ev.target.value==='proportional';mutate();renderSegments();});
+  for(const key of ['pointerSpring','pointerDamping','pointerIntensity'])$(key).addEventListener('input',ev=>{config[key]=Number(ev.target.value);$(key+'Label').textContent=config[key]+' %';save();});
+  $('mechanicalSound').addEventListener('change',ev=>{config.mechanicalSound=ev.target.value;save();});
+  $('previewMechanicalSound').addEventListener('click',()=>{if(!isSpinning)tick(true);});
   $('soundEnabled').addEventListener('change',ev=>{config.sound=ev.target.checked;save();});
   $('winnerEffect').addEventListener('change',ev=>{if(isSpinning)return;config.winnerEffect=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
   $('winnerStrength').addEventListener('change',ev=>{if(isSpinning)return;config.winnerStrength=ev.target.value;save();if(highlightedWinner!==null)showWinnerHighlight(highlightedWinner);});
@@ -845,13 +982,13 @@
     if(!isSpinning){
       if(previewPreviousWinner===null)clearWinnerHighlight();
       else if(previewPreviousWinner!==highlightedWinner)showWinnerHighlight(previewPreviousWinner);
-      $('spinHub').disabled=config.segments.length===0;
+      $('spinHub').disabled=!hasEligibleSegments();
     }
     $('statusText').textContent=previewPreviousStatus;
     if(!editorPanel.hidden)$('previewWinnerEffect').focus({preventScroll:true});
   }
   function startEffectPreview(){
-    if(isSpinning||!config.segments.length||!presentation.hidden||editorPanel.hidden)return;
+    if(isSpinning||!hasEligibleSegments()||!presentation.hidden||editorPanel.hidden)return;
     if(!previewEffectTimer){
       previewPreviousWinner=highlightedWinner;
       previewPreviousStatus=$('statusText').textContent;
@@ -859,7 +996,7 @@
     // Keep the drawer and its scroll position, but reveal the unblurred wheel.
     editorBackdrop.classList.add('is-effect-preview');
     $('spinHub').disabled=true; // preview must not accidentally trigger a spin
-    showWinnerHighlight(previewPreviousWinner??currentIndex(rotation,config.segments.length));
+    showWinnerHighlight(previewPreviousWinner??(config.segments[currentIndex(rotation,config.segments.length)]?.weight>0?currentIndex(rotation,config.segments.length):config.segments.findIndex(item=>item.weight>0)));
     $('statusText').textContent='Effektvorschau: Das Rad ist vier Sekunden ohne Blur sichtbar.';
     previewEffectTimer=setTimeout(finishEffectPreview,4000);
   }
@@ -875,18 +1012,114 @@
     if(!confirm('Alle Segmente und Einstellungen auf die Ausgangsversion zurücksetzen?'))return;
     config=defaultConfig();rotation=0;clearWinnerHighlight();render();save();$('statusText').textContent='Auf die goldene Mitte klicken, um zu drehen';toast('Ausgangskonfiguration wiederhergestellt.');
   });
+  function renderProfiles(){
+    const picker=$('profilePicker');picker.replaceChildren();
+    for(const item of workspace.items){const option=document.createElement('option');option.value=item.id;option.textContent=item.name;picker.append(option);}
+    picker.value=workspace.activeId;
+    if(document.activeElement!==$('profileName'))$('profileName').value=profile().name;
+    $('deleteProfile').disabled=isSpinning||workspace.items.length<=1;
+  }
+  function commitProfileChange(next,message){
+    if(!persist(next)){toast('Speichern fehlgeschlagen. Bisherige Glücksräder bleiben erhalten.');return false;}
+    workspace=next;
+    config=profile().config;
+    rotation=0;clearWinnerHighlight();render();
+    $('statusText').textContent='Auf die goldene Mitte klicken, um zu drehen';
+    if(message)toast(message);
+    return true;
+  }
+  function switchProfile(id){
+    if(isSpinning||id===workspace.activeId)return;
+    if(!save()){renderProfiles();toast('Wechsel nicht möglich: Änderungen konnten nicht gespeichert werden.');return;}
+    if(!workspace.items.some(item=>item.id===id))return;
+    commitProfileChange({...workspace,activeId:id},'Glücksrad geladen.');
+  }
+  $('profilePicker').addEventListener('change',ev=>switchProfile(ev.target.value));
+  $('profileName').addEventListener('change',()=>renameCurrentProfile());
+  function renameCurrentProfile(){
+    if(isSpinning)return;
+    const name=profileName($('profileName').value);
+    const next=JSON.parse(JSON.stringify(workspace));
+    next.items.find(item=>item.id===next.activeId).name=name;
+    if(commitProfileChange(next,'Glücksrad umbenannt.'))$('profileName').value=name;
+  }
+  $('renameProfile').addEventListener('click',renameCurrentProfile);
+  $('saveProfile').addEventListener('click',()=>{if(save())toast('Glücksrad gespeichert.');else toast('Lokaler Speicher ist nicht verfügbar.');});
+  $('newProfile').addEventListener('click',()=>{
+    if(isSpinning||!save())return;
+    if(workspace.items.length>=100){toast('Maximal 100 gespeicherte Glücksräder.');return;}
+    const name=profileName($('profileName').value);
+    const next=JSON.parse(JSON.stringify(workspace)),item=makeProfile(name===profile().name?'Glücksrad '+(workspace.items.length+1):name,defaultConfig());
+    next.items.push(item);next.activeId=item.id;
+    commitProfileChange(next,'Neues Glücksrad angelegt.');
+  });
+  $('duplicateProfile').addEventListener('click',()=>{
+    if(isSpinning||!save())return;
+    if(workspace.items.length>=100){toast('Maximal 100 gespeicherte Glücksräder.');return;}
+    const next=JSON.parse(JSON.stringify(workspace));
+    const copy=makeProfile(profile().name+' (Kopie)',saneConfig(config));
+    next.items.push(copy);next.activeId=copy.id;
+    commitProfileChange(next,'Glücksrad dupliziert.');
+  });
+  $('deleteProfile').addEventListener('click',()=>{
+    if(isSpinning||workspace.items.length<=1)return;
+    if(!confirm('Glücksrad „'+profile().name+'“ dauerhaft aus diesem Browser löschen? Vorher ggf. exportieren.'))return;
+    const next=JSON.parse(JSON.stringify(workspace));
+    next.items=next.items.filter(item=>item.id!==workspace.activeId);next.activeId=next.items[0].id;
+    commitProfileChange(next,'Glücksrad gelöscht.');
+  });
+  function downloadJson(data,filename){
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
+    const url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  function fileSlug(value){return profileName(value).toLowerCase().normalize('NFKD').replace(/[^a-z0-9äöüß]+/g,'-').replace(/^-|-$/g,'').slice(0,45)||'gluecksrad';}
+  function exportDate(){return new Date().toISOString().slice(0,10);}
   $('exportJson').addEventListener('click',()=>{
-    const data={version:1,segments:config.segments.map(({id,...rest})=>rest),duration:config.duration,coast:config.coast,sound:config.sound,winnerEffect:config.winnerEffect,winnerStrength:config.winnerStrength,winnerSound:config.winnerSound,palette:config.palette};
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='casino-noir-konfiguration.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    toast('Konfiguration als JSON exportiert.');
+    downloadJson({...config,id:profile().id,name:profile().name,format:'casino-noir-single',version:2},'casino-noir-'+fileSlug(profile().name)+'-'+exportDate()+'.json');
+    toast('Aktuelles Glücksrad exportiert.');
+  });
+  $('exportAllJson').addEventListener('click',()=>{
+    downloadJson({format:'casino-noir-collection',version:2,exportedAt:new Date().toISOString(),activeId:workspace.activeId,configurations:workspace.items},'casino-noir-alle-gluecksraeder-'+exportDate()+'.json');
+    toast('Alle Glücksräder exportiert.');
   });
   $('importJson').addEventListener('click',()=>{if(!isSpinning){$('importFile').value='';$('importFile').click();}});
   $('importFile').addEventListener('change',async ev=>{
-    const file=ev.target.files?.[0];if(!file)return;
-    if(file.size>2*1024*1024){toast('Die JSON-Datei ist zu groß (maximal 2 MB).');return;}
-    try{const parsed=JSON.parse(await file.text());config=saneConfig(parsed);rotation=0;clearWinnerHighlight();render();save();toast(`${config.segments.length} Segmente importiert.`);}
-    catch(err){toast('Import fehlgeschlagen: '+err.message);}
+    const file=ev.target.files?.[0];if(!file||isSpinning)return;
+    if(file.size>8*1024*1024){toast('Die JSON-Datei ist zu groß (maximal 8 MB).');return;}
+    try{
+      const parsed=JSON.parse(await file.text()),mode=$('importMode').value;
+      if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw Error('Keine gültige Konfigurationsdatei.');
+      if(parsed.version!==undefined&&(!Number.isInteger(parsed.version)||parsed.version<1||parsed.version>2))throw Error('Unbekannte JSON-Version.');
+      const collection=parsed.format==='casino-noir-collection';
+      if(parsed.format&& !['casino-noir-collection','casino-noir-single'].includes(parsed.format))throw Error('Unbekanntes Importformat.');
+      if(collection&&(!Array.isArray(parsed.configurations)||!parsed.configurations.length||parsed.configurations.length>100))throw Error('Ungültige Sammlung.');
+      const input=collection?parsed.configurations:[{id:parsed.id,name:parsed.name,config:parsed}];
+      // Validate the complete import before touching the workspace (atomic import).
+      const prepared=input.map((item,i)=>{
+        if(!item||typeof item!=='object'||!item.config)throw Error('Ungültiger Datensatz '+(i+1)+'.');
+        const cfg=saneConfig(item.config,{strict:true});
+        const id=typeof item.id==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(item.id)?item.id:profileId();
+        return makeProfile(item.name||file.name.replace(/\.json$/i,''),cfg,id);
+      });
+      const next=JSON.parse(JSON.stringify(workspace));
+      let newActive=next.activeId,first=true;
+      for(const incoming of prepared){
+        const existing=mode==='replace'?(collection?next.items.findIndex(p=>p.id===incoming.id||p.name===incoming.name):next.items.findIndex(p=>p.id===next.activeId)):-1;
+        if(existing>=0){const previous=next.items[existing];incoming.id=previous.id;next.items[existing]=incoming;if(first)newActive=incoming.id;}
+        else {
+          incoming.id=profileId();
+          if(next.items.some(p=>p.name===incoming.name))incoming.name+=' (Import)';
+          next.items.push(incoming);if(first)newActive=incoming.id;
+        }
+        first=false;
+      }
+      if(next.items.length>100)throw Error('Maximal 100 gespeicherte Glücksräder.');
+      next.activeId=newActive;
+      if(!commitProfileChange(next,prepared.length+' Glücksrad/-räder importiert.'))throw Error('Der Browser konnte die Sammlung nicht speichern.');
+    }catch(error){toast('Import fehlgeschlagen: '+error.message);}
+    finally{ev.target.value='';} // Re-importing the same filename must trigger change again.
   });
   function openIconPicker(id){
     currentIconTarget=id;lastFocusedElement=document.activeElement;
@@ -1062,23 +1295,79 @@
     }
   }
   function normalized(angle){return ((angle%360)+360)%360;}
-  function tick(){
-    if(!config.sound)return;
+  function tick(force=false){
+    if(!force&&!config.sound)return;
+    const ctx=ensureAudioContext();if(!ctx||ctx.state==='closed')return;
+    const tones={
+      subtle:{type:'sine',high:730,low:390,length:.028,gain:.024},
+      ratchet:{type:'square',high:1080,low:390,length:.037,gain:.018},
+      metal:{type:'triangle',high:1460,low:260,length:.075,gain:.047},
+      casino:{type:'triangle',high:890,low:470,length:.043,gain:.030}
+    };
+    const p=tones[config.mechanicalSound]||tones.casino;
     try{
-      const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;
-      if(!audioContext)audioContext=new Ctx();if(audioContext.state==='suspended')audioContext.resume();
-      const oscillator=audioContext.createOscillator(),gain=audioContext.createGain(),now=audioContext.currentTime;
-      oscillator.type='triangle';oscillator.frequency.setValueAtTime(870,now);oscillator.frequency.exponentialRampToValueAtTime(340,now+.035);
-      gain.gain.setValueAtTime(.065,now);gain.gain.exponentialRampToValueAtTime(.001,now+.04);
-      oscillator.connect(gain);gain.connect(audioContext.destination);oscillator.start(now);oscillator.stop(now+.04);
-    }catch{/* Sound ist optional und darf die Drehung nie blockieren. */}
+      const oscillator=ctx.createOscillator(),gain=ctx.createGain(),now=ctx.currentTime;
+      oscillator.type=p.type;
+      oscillator.frequency.setValueAtTime(p.high,now);
+      oscillator.frequency.exponentialRampToValueAtTime(p.low,now+p.length);
+      gain.gain.setValueAtTime(p.gain,now);
+      gain.gain.exponentialRampToValueAtTime(.0001,now+p.length);
+      oscillator.connect(gain);gain.connect(ctx.destination);
+      oscillator.start(now);oscillator.stop(now+p.length+.008);
+      if(config.mechanicalSound==='metal'){
+        const overtone=ctx.createOscillator(),volume=ctx.createGain();
+        overtone.type='sine';overtone.frequency.value=2370;
+        volume.gain.setValueAtTime(.016,now);
+        volume.gain.exponentialRampToValueAtTime(.0001,now+.09);
+        overtone.connect(volume);volume.connect(ctx.destination);
+        overtone.start(now);overtone.stop(now+.1);
+      }
+    }catch{/* Optional audio must never block a spin. */}
   }
-  function currentIndex(angle,n){return ((Math.round(-normalized(angle)/(360/n))%n)+n)%n;}
-  // The control changes when the wheel crosses its final segment boundary.
-  // A high coast value deliberately leaves more angular distance late in the spin.
-  // Values are strictly monotonic, reaching exactly the chosen segment centre.
+  function currentIndex(angle,n,layout){return selectedAtRotation(angle,layout||segmentLayout());}
+  // Kept as a documented reference for the original coast control.
   function coastExponent(coast){return 3.9-2.55*Math.max(0,Math.min(100,coast))/100;}
   function spinEase(t,coast){return 1-Math.pow(1-Math.max(0,Math.min(1,t)),coastExponent(coast));}
+  // Integrate a smooth acceleration ramp followed by monotonic, continuously
+  // decreasing velocity. All phases share the same total angular displacement.
+  function motionProgress(t,coast){
+    const x=Math.max(0,Math.min(1,t)),a=.075,p=coastExponent(coast);
+    const rampArea=2*a/Math.PI,brakeArea=(1-a)/p,total=rampArea+brakeArea;
+    if(x<=a)return (2*a/Math.PI*(1-Math.cos(Math.PI*x/(2*a))))/total;
+    return (rampArea+brakeArea*(1-Math.pow((1-x)/(1-a),p)))/total;
+  }
+  const pointer=$('fixedPointer');
+  let pointerAngle=0,pointerVelocity=0,pointerRaf=0,pointerLastTime=0;
+  function setPointerAngle(value){
+    pointerAngle=value;
+    // SVG transform never reads layout and remains independent of the rotating wheel.
+    pointer.setAttribute('transform',`rotate(${pointerAngle.toFixed(3)} 320 16)`);
+  }
+  function settlePointerStep(dt){
+    const omega=12+config.pointerSpring*.22;
+    const damping=.12+config.pointerDamping*.012;
+    const substeps=Math.max(1,Math.ceil(dt/.012)),h=dt/substeps;
+    for(let i=0;i<substeps;i++){
+      pointerVelocity+=(-omega*omega*pointerAngle-2*damping*omega*pointerVelocity)*h;
+      setPointerAngle(Math.max(-18,Math.min(18,pointerAngle+pointerVelocity*h)));
+    }
+  }
+  function pointerContact(angularVelocity){
+    const strength=.2+.8*config.pointerIntensity/100;
+    pointerVelocity=Math.max(-320,pointerVelocity-240*strength/(1+angularVelocity/800));
+  }
+  function finishPointerMovement(){
+    cancelAnimationFrame(pointerRaf);
+    let frames=0;
+    function settle(now){
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){setPointerAngle(0);pointerVelocity=0;return;}
+      const dt=pointerLastTime?Math.min(.032,(now-pointerLastTime)/1000):.016;
+      pointerLastTime=now;settlePointerStep(dt);
+      if(++frames>120||(Math.abs(pointerAngle)<.03&&Math.abs(pointerVelocity)<.15)){setPointerAngle(0);pointerVelocity=0;return;}
+      pointerRaf=requestAnimationFrame(settle);
+    }
+    pointerLastTime=0;pointerRaf=requestAnimationFrame(settle);
+  }
   // 0 -> 100 -> 0 every 1.6 seconds. A timestamp-based triangle wave keeps
   // the captured power independent of animation frame rate and input latency.
   const POWER_PERIOD_MS=1600;
@@ -1102,60 +1391,79 @@
     }
   }
   function animatePower(time){
-    if(!isSpinning){displayPower(config.segments.length ? powerAt(time) : 0);}
-    powerRaf=requestAnimationFrame(animatePower);
+    if(!isSpinning)displayPower(hasEligibleSegments()?powerAt(time):0);
+    powerRaf=document.hidden?0:requestAnimationFrame(animatePower);
   }
-  powerRaf=requestAnimationFrame(animatePower);
+  if(!document.hidden)powerRaf=requestAnimationFrame(animatePower);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){cancelAnimationFrame(powerRaf);powerRaf=0;}
+    else if(!powerRaf)powerRaf=requestAnimationFrame(animatePower);
+  });
   let raf=0;
   function spin(){
-    const n=config.segments.length;if(isSpinning||!n)return;
+    const n=config.segments.length;
+    if(isSpinning||!hasEligibleSegments())return;
+    let winner;
+    try{winner=drawWeightedWinner();}
+    catch(error){toast(error.message);return;}
     clearWinnerHighlight();
     const power=powerAt(performance.now());
-    displayPower(power); // Capture at the actual click, not at the previous frame.
-    isSpinning=true;if(config.winnerSound!=='off'||config.sound)ensureAudioContext();powerMeter.classList.add('is-locked');
+    displayPower(power);
+    isSpinning=true;
+    if(config.winnerSound!=='off'||config.sound)ensureAudioContext();
+    powerMeter.classList.add('is-locked');
     lockEditor(true);$('spinHub').disabled=true;$('spinHub').classList.add('is-spinning');
     const percent=Math.round(power*100);
     $('statusText').textContent=`Drehkraft ${percent} % · Das Rad dreht sich …`;
     $('presentationResult').textContent='';
-    const winner=Math.floor(rand()*n),step=360/n;
-    // Sektor 0 liegt zu Beginn mittig unter dem feststehenden Zeiger bei 12 Uhr.
-    // Exakt auf die Sektormitte zielen: So steht die Gewinner-Beschriftung
-    // beim Stillstand horizontal statt zufällig schräg zum Zeiger.
-    const finalModulo=normalized(-winner*step);
+    const layout=segmentLayout();
+    // The winner is sampled before the spin, independently of power. The
+    // trajectory is strictly monotonic and lands on the actual winning centre.
+    const target=layout[winner],finalModulo=normalized(-(target.center+90));
     const forward=normalized(finalModulo-normalized(rotation));
-    // Stronger timing increases both revolutions and duration. The winner is
-    // selected independently of power, so the gauge never manipulates odds.
-    const turns=2+Math.round(power*8); // 2 to 10 full revolutions
+    const turns=2+Math.round(power*8);
     const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // For people requesting reduced motion, avoid rapid multiple rotations.
     const visibleTurns=reduced?0:turns;
     const from=rotation,delta=visibleTurns*360+forward,finish=from+delta;
     const duration=reduced?280:config.duration*1000*(.35+.65*power);
-    const start=performance.now();lastTickAt=0;lastTickSector=currentIndex(from,n);
+    const start=performance.now();
+    let lastTime=start,lastAngle=from;
+    lastTickAt=0;lastTickSector=currentIndex(from,n,layout);
+    cancelAnimationFrame(pointerRaf);pointerRaf=0;pointerLastTime=0;
+    if(reduced){setPointerAngle(0);pointerVelocity=0;}
     function frame(now){
-      const t=Math.min(1,(now-start)/duration),ease=spinEase(t,config.coast);
-      const angle=from+delta*ease;
+      const t=Math.min(1,(now-start)/duration);
+      const angle=from+delta*motionProgress(t,config.coast);
       wheel.style.transform=`rotate(${angle}deg)`;
-      const sector=currentIndex(angle,n);
-      if(sector!==lastTickSector&&now-lastTickAt>38){lastTickSector=sector;lastTickAt=now;tick();svg.classList.remove('pointer-tick');void svg.getBoundingClientRect();svg.classList.add('pointer-tick');}
+      const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));
+      const speed=dt?Math.abs((angle-lastAngle)/dt):0;
+      const sector=currentIndex(angle,n,layout);
+      // Coalesce ultra-fast contacts so even 5,000 segments stay responsive.
+      if(!reduced&&(sector!==lastTickSector||Math.abs(angle-lastAngle)>360/n)&&now-lastTickAt>=35){
+        lastTickSector=sector;lastTickAt=now;
+        pointerContact(speed);tick();
+      }
+      if(!reduced)settlePointerStep(dt);
+      lastAngle=angle;lastTime=now;
       if(t<1){raf=requestAnimationFrame(frame);return;}
       rotation=finish;wheel.style.transform=`rotate(${rotation}deg)`;
       isSpinning=false;powerMeter.classList.remove('is-locked');powerEpoch=performance.now()-310;
-      lockEditor(false);$('spinHub').disabled=false;$('spinHub').classList.remove('is-spinning');
+      lockEditor(false);$('spinHub').disabled=!hasEligibleSegments();$('spinHub').classList.remove('is-spinning');
+      if(!reduced)finishPointerMovement();
       showWinnerHighlight(winner);playWinnerSound(config.winnerSound);
       const selected=config.segments[winner],result=safeText(selected.label);
       $('statusText').textContent=`Ergebnis: ${result} · Feld ${winner+1} von ${n}`;
       $('presentationResult').textContent=`✦ ${result} ✦`;
-      // Debugwerte erleichtern die Regressionstests und die Prüfung der Zeiger-/Ergebniszuordnung.
       Object.assign(window.__casinoNoirDebug,{lastWinner:winner,lastRotation:rotation,spinning:false,lastPower:power,lastTurns:visibleTurns,lastDurationMs:duration,lastCoast:config.coast,lastEasingExponent:coastExponent(config.coast)});
     }
     Object.assign(window.__casinoNoirDebug,{spinning:true,lastWinner:null});
     raf=requestAnimationFrame(frame);
   }
   $('spinHub').addEventListener('click',spin);
-  window.__casinoNoirDebug={get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
+  window.__casinoNoirDebug={get config(){return config;},get rotation(){return rotation;},get isSpinning(){return isSpinning;},get power(){return powerLevel;},get powerPeriodMs(){return POWER_PERIOD_MS;},get highlightedWinner(){return highlightedWinner;},showWinnerHighlight,playWinnerSound,get spinEase(){return spinEase;},motionProgress,segmentLayout,drawWeightedWinner,get pointerAngle(){return pointerAngle;},get iconFontReady(){return iconFontReady;},get iconCatalogReady(){return fullCatalogReady;},get iconCatalogCount(){return ICONS.length;},get iconSearchMetadataReady(){return iconSearchReady;},get iconSearchMetadataCount(){return ICON_SEARCH_TAGS.size;},get iconMatches(){return iconMatchCount;},get iconMatchingNames(){return [...iconMatches];},get iconCodepointMap(){return Object.fromEntries(ICON_CODEPOINTS);},loadIconCatalog,lastWinner:null,lastRotation:0,spinning:false,stop(){cancelAnimationFrame(raf);}};
   restoreIconCatalog();
   render();
+  persist();
   loadIconCatalog();
   // Material Symbols wird offiziell als Webfont über Google Fonts bezogen.
   // Falls Offline-/Privacy-Einstellungen das Laden verhindern, bleiben hochwertige
