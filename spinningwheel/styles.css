@@ -279,3 +279,77 @@ body.editor-open{overflow:hidden}
 .weight-control input{width:64px;min-width:0;min-height:32px;padding:4px 5px;background:#241820;border:1px solid #79594e;border-radius:6px;color:#ffe7bc;font:12px system-ui,sans-serif}
 .weight-control small{min-width:42px;color:#e8b97a;text-align:right;font-variant-numeric:tabular-nums}
 @media(max-width:520px){.segment-controls{flex-wrap:wrap;gap:5px}.weight-control{order:2;width:100%;justify-content:flex-end}.weight-control input{width:70px}}
+
+
+/* Casino Noir card decks, segment assignments and cinematic reveal */
+.segment-action-row{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:11px 0 0 30px;padding-top:11px;border-top:1px solid #49323b}
+.segment-action-row label{display:grid;gap:5px;flex:1 1 155px;min-width:0;color:#d9baac;font-size:10px;font-weight:650}
+.segment-action-row select{width:100%;min-height:36px;min-width:0;color:#f8ddbd;background:#251920;border:1px solid #73535b;border-radius:7px;padding:7px;font-size:11px}
+.segment-action-row .btn{min-height:36px;flex:1 1 140px}
+.deck-manager{margin:16px 12px 22px;border:1px solid #805c43;border-radius:13px;background:linear-gradient(145deg,#2a1b23,#1b141a);box-shadow:inset 0 1px #e6bc7b18;overflow:hidden}
+.deck-heading{padding:18px 15px 10px;align-items:center}
+.deck-heading h2{font:normal 19px Georgia,serif;color:#ffdfaa;margin:0 0 3px}
+.deck-heading .btn{padding:9px 10px}
+.deck-container{padding:6px 14px 18px}
+.deck-container label,.deck-card-row label{display:grid;gap:5px;color:#e7c7ab;font-size:11px;font-weight:620}
+.deck-container input:not([type=checkbox]),.deck-container select,.deck-container textarea{min-width:0;max-width:100%;width:100%;padding:9px 10px;border-radius:8px;border:1px solid #755463;color:#fae8d5;background:#191218;font:12px/1.5 system-ui,sans-serif}
+.deck-container textarea{resize:vertical;min-height:75px;overflow-wrap:anywhere}
+.deck-container input:focus-visible,.deck-container select:focus-visible,.deck-container textarea:focus-visible{outline:2px solid #efc787;outline-offset:2px}
+.deck-actions{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 11px}
+.deck-actions .btn{flex:1 1 95px;min-width:0;white-space:normal}
+.deck-file-actions{border-top:1px solid #514047;padding-top:13px;margin-top:18px}
+.deck-settings{display:grid;gap:10px;padding:13px 0;border-block:1px solid #4b323d}
+.deck-summary{padding:10px 12px;background:#37252a;border-radius:9px;border:1px solid #865b45;color:#f0ca92;font-variant-numeric:tabular-nums;font-size:12px}
+.deck-card-heading{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:13px 0 9px}
+.deck-card-heading h3{margin:0;color:#edc895;font:18px Georgia,serif}
+.deck-cards{display:flex;flex-direction:column;gap:10px}
+.deck-card-row{display:grid;gap:10px;padding:12px;border-radius:11px;border:1px solid #58404a;background:linear-gradient(120deg,#2d2027,#21171e);box-shadow:0 4px 15px #0002;transition:border-color .18s,transform .18s}
+.deck-card-row:hover,.deck-card-row:focus-within{border-color:#c49967}
+.deck-card-row.deck-dragging{opacity:.55;transform:scale(.985)}
+.deck-card-row.deck-drop-target{border-color:#f6cf8e;box-shadow:0 0 0 2px #e5ba7b66}
+.deck-card-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:#f5daa8}
+.deck-card-toolbar strong{font:600 12px Georgia,serif}
+.deck-grip{font-size:20px;color:#c8a276;cursor:grab}
+.deck-probability{margin-left:auto;color:#f8cc86;font-variant-numeric:tabular-nums;font-size:11px}
+.deck-card-options{display:grid;grid-template-columns:minmax(110px,1.1fr) minmax(80px,.75fr) 58px;align-items:end;gap:7px}
+.deck-card-options .deck-icon-button{grid-column:1/-1}
+.deck-card-options input[type=color]{padding:2px;width:100%;height:39px}
+.deck-card-options input:disabled{opacity:.4}
+.deck-card-chances{margin:0;padding:6px 2px;color:#c5a8a1;font-size:10px;font-variant-numeric:tabular-nums}
+.deck-container .setting-help{margin:6px 0;color:#b49da1;font-size:11px;line-height:1.55}
+.deck-export-session{display:flex!important;align-items:center;gap:8px;margin:12px 0;color:#d7b59a!important}
+.deck-export-session input{accent-color:#e7b573}
+.card-overlay{position:fixed;z-index:95;inset:0;display:grid;place-items:center;overflow-y:auto;overscroll-behavior:contain;padding:clamp(12px,3vh,30px);background:radial-gradient(ellipse at 50% 30%,#572239d9 0%,#140b13f5 48%,#080609 100%);backdrop-filter:blur(13px)}
+body.card-overlay-open{overflow:hidden}
+.card-reveal-panel{width:min(540px,100%);min-height:0;text-align:center;padding:clamp(12px,3vw,28px);border:1px solid #986e48;border-radius:19px;background:linear-gradient(160deg,#2f1d25,#140e15 64%);box-shadow:0 30px 120px #000c,inset 0 1px #e0b67555}
+.card-reveal-panel h2{margin:8px 0 4px;font:normal clamp(24px,4vw,34px) Georgia,serif;color:#ffdfae}
+.card-reveal-panel>p{margin:0 0 14px;font-size:12px;color:#c9a7a4}
+.card-perspective{perspective:1100px;display:grid;place-items:center;margin:auto;width:min(100%,320px);aspect-ratio:2.5/3.5}
+.card-flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;transform:rotateY(0deg) translateY(0);transition:transform 1.05s cubic-bezier(.2,.72,.14,1);--picked-color:#d6b679;filter:drop-shadow(0 22px 21px #060407b0)}
+.card-flip.is-revealed{transform:rotateY(180deg) translateY(-6px)}
+.card-face{position:absolute;inset:0;border-radius:15px;border:3px solid #ab824a;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:inset 0 0 0 3px #25191d,inset 0 0 0 5px #d6b579}
+.card-back{display:grid;place-items:center;background:repeating-linear-gradient(45deg,#1c1018 0 8px,#2b1825 8px 16px);color:#f0cd8f}
+.card-back-pattern{width:84%;height:87%;border:1px solid #b78d52;outline:1px solid #a27c4a;outline-offset:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(circle at 50% 45%,#672d42,#2c1725 72%);box-shadow:inset 0 0 30px #0007}
+.card-back-pattern>span{font-size:66px;line-height:1;color:#f5c981;text-shadow:0 0 35px #e1b77166}
+.card-back-pattern strong{font:700 21px Georgia,serif;letter-spacing:.12em}
+.card-back-pattern strong i{color:#ffd9a6;font-style:normal}
+.card-back-pattern small{font-size:8px;letter-spacing:.21em;color:#be9e8c}
+.card-front{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:19px 22px;transform:rotateY(180deg);background:linear-gradient(160deg,#38212c,#1a1119);border-color:var(--picked-color);color:#fbe7c9}
+.card-front::before{content:"";position:absolute;inset:12px;border:1px solid var(--picked-color);pointer-events:none;opacity:.5}
+.card-face-icon{font:23px/1.2 Georgia,serif;color:var(--picked-color);margin-bottom:12px;overflow-wrap:anywhere;max-height:55px;overflow:hidden}
+.card-face-title{margin:0 0 11px;font:normal 22px/1.24 Georgia,serif;color:#fbe3af;overflow-wrap:anywhere;max-height:64px;overflow-y:auto}
+.card-face-text{margin:0;max-height:55%;overflow-y:auto;overscroll-behavior:contain;font:clamp(13px,2.5vw,17px)/1.48 Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere;scrollbar-color:#af8955 #2c1b27}
+.card-front small{position:absolute;bottom:17px;color:#bc9780;font-size:8px;letter-spacing:.12em}
+.card-reveal-actions{display:flex;justify-content:center;margin-top:21px}
+.card-reveal-actions .btn{min-height:46px;min-width:180px;font-size:13px}
+@media(max-width:520px){
+  .segment-action-row{margin-left:0}
+  .segment-action-row label{flex-basis:125px}
+  .deck-manager{margin-left:8px;margin-right:8px}
+  .deck-container{padding:6px 10px 14px}
+  .deck-card-options{grid-template-columns:minmax(98px,1.2fr) minmax(70px,.7fr) 51px}
+  .card-perspective{width:min(100%,260px)}
+  .card-reveal-panel{padding:13px 10px}
+  .card-reveal-panel h2{font-size:24px}
+}
+@media(prefers-reduced-motion:reduce){.card-flip{transition:none!important}.card-overlay{backdrop-filter:none}}

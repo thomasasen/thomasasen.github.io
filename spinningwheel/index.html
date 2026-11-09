@@ -9,9 +9,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261109-mechanics-v1">
+  <link rel="stylesheet" href="styles.css?v=20261109-cards-v1">
   <script defer src="wheel-physics.js?v=20261109-detent-v1"></script>
-  <script defer src="app.js?v=20261109-detent-v1"></script>
+  <script defer src="card-engine.js?v=20261109-cards-v1"></script>
+  <script defer src="deck-ui.js?v=20261109-cards-v1"></script>
+  <script defer src="app.js?v=20261109-cards-v1"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -76,6 +78,39 @@
         <div class="editor-header"><div><div class="eyebrow">✦ &nbsp; WHEEL CONFIGURATION</div><h1 id="editorTitle">Dein Glücksrad</h1><p>Jedes Segment individuell gestalten.</p></div><button class="editor-close" id="closeEditor" type="button" aria-label="Konfiguration schließen" title="Schließen">×</button></div>
         <div class="section-title"><div><h2>Segmente <span class="count-pill" id="segmentCount">8</span></h2><p>Text, Material-Symbol oder beides</p></div><button type="button" id="addSegment" class="btn btn-primary"><span aria-hidden="true">＋</span> Hinzufügen</button></div>
         <div class="segment-list" id="segmentList" aria-label="Segmentliste"></div>
+        <section class="deck-manager" aria-labelledby="deckHeading">
+          <div class="section-title deck-heading"><div><h2 id="deckHeading">Kartendecks <span class="count-pill" id="deckCount">0</span></h2><p>Karten und Wahrscheinlichkeiten verwalten</p></div><button type="button" class="btn btn-primary" id="deckNew">＋ Neues Deck</button></div>
+          <div class="deck-container">
+            <label for="deckSelect">Kartendeck auswählen</label><select id="deckSelect"></select>
+            <div class="deck-actions">
+              <button class="btn btn-quiet" id="deckDuplicate" type="button">⧉ Duplizieren</button>
+              <button class="btn btn-quiet btn-danger" id="deckDelete" type="button">× Löschen</button>
+              <button class="btn btn-quiet" id="deckReset" type="button">↻ Neu mischen</button>
+            </div>
+            <p id="deckEmptyNotice" class="setting-help">Lege ein Deck an, füge Karten hinzu und wähle es anschließend bei einem Segment unter „Aktion nach Gewinn“ aus.</p>
+            <div id="deckDetails" hidden>
+              <div class="deck-settings">
+                <label for="deckName">Deckname<input id="deckName" type="text" maxlength="80" required></label>
+                <label for="deckMode">Ziehmodus<select id="deckMode"><option value="without">Ohne Zurücklegen (Standard)</option><option value="with">Mit Zurücklegen</option></select></label>
+                <p class="setting-help">Ohne Zurücklegen: Jedes Exemplar wird nur einmal gezogen. Mit Zurücklegen: Mehrfachkarten behalten ihre ursprüngliche Häufigkeit. „Nur einmal“-Karten bleiben in beiden Modi nach der Ziehung gesperrt.</p>
+                <label for="deckExhaustion">Deck erschöpft<select id="deckExhaustion"><option value="manual">Manuell neu mischen (Standard)</option><option value="auto">Automatisch nächste Deckrunde</option></select></label>
+                <p class="deck-summary" id="deckStats" aria-live="polite"></p><p id="deckLinks" class="setting-help"></p>
+              </div>
+              <div class="deck-card-heading"><h3>Karten</h3><button class="btn btn-primary" type="button" id="deckAddCard">＋ Karte hinzufügen</button></div>
+              <div id="deckCards" class="deck-cards"></div>
+              <p class="setting-help">Pro Deck maximal 100 Kartentypen, je Karte 1–1.000 Exemplare und insgesamt 50.000 Exemplare. Kartentext maximal 1.200 Zeichen. Karten lassen sich ziehen oder mit den Pfeiltasten-Buttons verschieben.</p>
+            </div>
+            <div class="deck-actions deck-file-actions">
+              <button class="btn btn-quiet" type="button" id="deckExportOne">Deck exportieren</button>
+              <button class="btn btn-quiet" type="button" id="deckExportAll">Alle Decks exportieren</button>
+              <button class="btn btn-quiet" type="button" id="deckImport">Decks importieren</button>
+              <button class="btn btn-quiet btn-danger" type="button" id="deckResetAll">Alle Decks neu mischen</button>
+            </div>
+            <label class="deck-export-session"><input type="checkbox" id="includeDeckSession"> Laufenden Kartenvorrat beim JSON-Export einschließen</label>
+            <input id="deckImportFile" type="file" accept=".json,application/json" hidden>
+            <p class="setting-help">Automatische Speicherung im Browser. Maximal 100 Decks; JSON-Import bis 2 MB. Eine optionale Sicherung des laufenden Vorrats kann beim späteren Import wiederhergestellt werden.</p>
+          </div>
+        </section>
         <section class="profile-manager" aria-labelledby="profileHeading">
           <h2 id="profileHeading">Gespeicherte Glücksräder</h2>
           <label for="profileSelect">Aktives Glücksrad</label>
@@ -171,6 +206,20 @@
     <button class="presentation-close btn" id="closePresentation" type="button" aria-label="Präsentationsmodus schließen">✕ Schließen</button>
     <div id="presentationTarget"></div>
     <div id="presentationResult" class="presentation-result" aria-live="polite"></div>
+  </div>
+  <div class="card-overlay" id="cardOverlay" role="dialog" aria-modal="true" aria-labelledby="cardDeckName" hidden>
+    <div class="card-reveal-panel">
+      <div class="eyebrow">✦ &nbsp; CASINO NOIR · KARTENZIEHUNG</div>
+      <h2 id="cardDeckName">Kartendeck</h2>
+      <p id="cardRemaining" aria-live="polite">Kartenvorrat</p>
+      <div class="card-perspective">
+        <div class="card-flip" id="cardFlip">
+          <div class="card-face card-back" aria-hidden="true"><div class="card-back-pattern"><span>✦</span><strong>CASINO <i>NOIR</i></strong><small>THE HOUSE OF CHANCE</small></div></div>
+          <div class="card-face card-front" id="cardFront"><div class="card-face-icon"></div><h3 class="card-face-title"></h3><p class="card-face-text"></p><small>CASINO NOIR · PRIVATE DECK</small></div>
+        </div>
+      </div>
+      <div class="card-reveal-actions"><button type="button" id="drawCard" class="btn btn-primary">Karte ziehen</button><button type="button" id="nextRound" class="btn btn-primary" hidden>Weiter zum Glücksrad</button></div>
+    </div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
