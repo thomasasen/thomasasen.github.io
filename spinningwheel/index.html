@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20261109-mechanics-v1">
-  <script defer src="wheel-physics.js?v=20261109-ratchet-v1"></script>
-  <script defer src="app.js?v=20261109-ratchet-v1"></script>
+  <script defer src="wheel-physics.js?v=20261109-detent-v1"></script>
+  <script defer src="app.js?v=20261109-detent-v1"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -100,6 +100,8 @@
           <div class="setting-row"><div class="setting-descriptor"><label for="sizeMode">Sektorgrößen</label><small>Proportionale Sektoren übernehmen die Gewichte als Flächenanteile. Gleich große Sektoren haben im Physikmodus etwa gleiche Chancen.</small></div><select id="sizeMode"><option value="equal">Gleich große Segmente</option><option value="proportional">Proportionale Segmente</option></select></div>
           <div class="setting-row"><div class="setting-descriptor"><label for="subdivisions">Unterteilungen je Segment</label><small>Feine Rastpunkte am Außenring. 7 pro Segment ergeben bei 8 Segmenten 56 Punkte.</small></div><div class="setting-value"><input type="range" id="subdivisions" min="1" max="12" step="1" value="7" aria-describedby="subdivisionDetail"><output id="subdivisionsLabel" for="subdivisions">7</output></div></div>
           <p class="setting-help" id="subdivisionDetail">56 Rastpunkte auf dem Rad. Die Gewinnsegmente bleiben unverändert.</p>
+          <div class="setting-row setting-row-coast"><div class="setting-descriptor"><label for="ratchetStrength">Einraststärke</label><small>Sanft: Der Zeiger lässt das Rad leichter noch einen Rastpunkt weiterspringen. Kräftig: Es bleibt eher am aktuellen Punkt hängen.</small></div><div class="setting-value"><input type="range" id="ratchetStrength" min="0" max="100" value="50" step="5" aria-describedby="ratchetStrengthHint"><output id="ratchetStrengthLabel" for="ratchetStrength">50 %</output></div></div>
+          <p class="setting-help" id="ratchetStrengthHint">0 %: sanfter Widerstand · 50 %: ausgewogen · 100 %: kräftiges Einrasten. Nur im Physikmodus. Der Gewinner wird nicht vorab festgelegt.</p>
           <div class="setting-row"><label for="spinDuration">Drehträgheit (Richtwert)</label><div class="setting-value"><input type="range" id="spinDuration" min="3" max="30" value="6" step="1"><output id="durationLabel" for="spinDuration">6 s</output></div></div>
           <div class="setting-row setting-row-coast"><div class="setting-descriptor"><label for="coastIntensity">Auslaufspannung</label><small>Höher = das Rad schleicht länger über die letzten Felder.</small></div><div class="setting-value"><input type="range" id="coastIntensity" min="0" max="100" value="65" step="5" aria-describedby="coastHint"><output id="coastLabel" for="coastIntensity">65 %</output></div></div><p class="setting-help" id="coastHint">0 %: bremst früh · 100 %: bleibt bis kurz vor Schluss in Bewegung.</p>
           <div class="winner-settings" aria-labelledby="winnerSettingsTitle">
