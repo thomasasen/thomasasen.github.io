@@ -1597,7 +1597,11 @@
     refreshSegments:()=>renderSegments(),
     pickIcon:id=>openIconPicker('deck-card:'+id),
     notify:message=>toast(message),
-    isSpinning:()=>isSpinning
+    isSpinning:()=>isSpinning,
+    resolveCardIcon:icon=>{
+      const glyph=iconFontReady?actualIconGlyph(icon):null;
+      return glyph?{glyph,material:true}:{glyph:iconFallback(icon),material:false};
+    }
   });
   restoreIconCatalog();
   render();
