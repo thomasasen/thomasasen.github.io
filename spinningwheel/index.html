@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261109-wheel-v2">
-  <script defer src="app.js?v=20261109-wheel-v2"></script>
+  <link rel="stylesheet" href="styles.css?v=20261109-pointer-v3">
+  <script defer src="app.js?v=20261109-pointer-v3"></script>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -43,6 +43,11 @@
                 <path d="M300 14 Q320 10 340 14 L338 44 L320 80 L302 44Z" fill="url(#pointerGold)" stroke="#4d2313" stroke-width="1.7"/>
                 <path d="M308 23 H332 L330 43 L320 65 L310 43Z" fill="url(#pointerRose)" stroke="#ffdf9f" stroke-width="1.4"/>
                 <path d="M320 27 L323 35 L331 38 L323 41 L320 49 L317 41 L309 38 L317 35Z" fill="#fff3cf" opacity=".91"/>
+              </g>
+              <g id="pointerHinge" aria-hidden="true" pointer-events="none">
+                <circle cx="320" cy="19" r="9.1" fill="#48251b" stroke="#f5ce8f" stroke-width="1.3"/>
+                <circle cx="320" cy="19" r="5.9" fill="url(#pointerGold)" stroke="#75402a" stroke-width="1"/>
+                <path d="M317 19 H323" stroke="#4a261b" stroke-width="1.6" stroke-linecap="round"/>
               </g>
             </svg>
             <div id="winnerStage" class="winner-stage" aria-hidden="true" hidden>
@@ -131,6 +136,8 @@
           <div class="setting-row"><div class="setting-descriptor"><label for="pointerSpring">Zeigerfederung</label><small>Wie schnell der Zeiger zurückfedert</small></div><div class="setting-value"><input type="range" id="pointerSpring" min="10" max="100" value="65" step="5"><output id="pointerSpringLabel">65 %</output></div></div>
           <div class="setting-row"><label for="pointerDamping">Zeigerdämpfung</label><div class="setting-value"><input type="range" id="pointerDamping" min="10" max="100" value="60" step="5"><output id="pointerDampingLabel">60 %</output></div></div>
           <div class="setting-row"><label for="pointerIntensity">Zeigerbewegung</label><div class="setting-value"><input type="range" id="pointerIntensity" min="0" max="100" value="60" step="5"><output id="pointerIntensityLabel">60 %</output></div></div>
+          <button type="button" class="btn btn-quiet pointer-preview-control" id="previewPointer">Zeigerfederung vorführen</button>
+          <p class="setting-help">Der Zeiger schlägt bei jedem Kontakt aus und federt zurück. Bei hoher Drehgeschwindigkeit sind die Ausschläge kleiner.</p>
           <div class="setting-row"><label for="tickStyle">Klickcharakter</label><select id="tickStyle"><option value="soft">Weiches Casino-Klicken</option><option value="mechanical">Mechanisch</option><option value="ratchet">Klassische Ratsche</option><option value="metal">Massiver Metallzeiger</option></select></div>
           <button type="button" class="btn btn-quiet" id="previewTick">Klick anhören</button>
           <div class="setting-row"><label for="soundEnabled">Mechanisches Klickgeräusch</label><label class="toggle"><input type="checkbox" id="soundEnabled" checked><span class="toggle-slider"></span></label></div>
